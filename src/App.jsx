@@ -415,6 +415,7 @@ export default function App() {
         {activeTab === 'runsheet' && (
           <DailyRunSheet
             completedDeliveries={runSheet}
+            rider={rider}
             onClearRunSheet={handleClearRunSheet}
             onSelectStopForDelivery={(stop) => {
               setVerifiedOrder(stop);

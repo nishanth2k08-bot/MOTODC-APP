@@ -11,15 +11,20 @@ import {
   RefreshCw,
   ExternalLink,
   Clock,
-  QrCode
+  QrCode,
+  Wallet,
+  ChevronRight,
+  Coins
 } from 'lucide-react';
+import ShiftSettlementDrawer from './ShiftSettlementDrawer';
 
 const money = (n) => '₹' + Number(n || 0).toLocaleString('en-IN');
 
-export default function DailyRunSheet({ completedDeliveries, onClearRunSheet, onSelectStopForDelivery }) {
+export default function DailyRunSheet({ completedDeliveries, onClearRunSheet, onSelectStopForDelivery, rider }) {
   const [activeTab, setActiveTab] = useState('pending'); // 'pending' | 'completed'
   const [pendingStops, setPendingStops] = useState([]);
   const [loadingStops, setLoadingStops] = useState(false);
+  const [showSettlement, setShowSettlement] = useState(false);
 
   // Fetch pending stops from live backend
   const fetchPendingStops = async () => {
@@ -125,6 +130,31 @@ export default function DailyRunSheet({ completedDeliveries, onClearRunSheet, on
           </div>
         )}
       </div>
+
+      {/* 💰 Shift Settlement & Cash Reconciler Banner */}
+      <button
+        type="button"
+        className="shiftSettlementTriggerBtn"
+        onClick={() => setShowSettlement(true)}
+      >
+        <div className="settlementBtnLeft">
+          <div className="settlementIconPulse">
+            <Wallet size={18} color="#f59e0b" />
+          </div>
+          <div>
+            <div className="settlementBtnTitle">
+              <span>Shift Settlement & Reconciler</span>
+              <span className="settlementMiniBadge">
+                {totalCashCollected > 0 ? `Cash: ${money(totalCashCollected)}` : 'Settle Shift'}
+              </span>
+            </div>
+            <p className="settlementBtnSubtitle">
+              Banknote counter, ₹45/drop earnings & WhatsApp cashier slip
+            </p>
+          </div>
+        </div>
+        <ChevronRight size={18} className="settlementChevron" />
+      </button>
 
       {/* Sub Tabs: Pending Stops vs Completed */}
       <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
@@ -431,8 +461,30 @@ export default function DailyRunSheet({ completedDeliveries, onClearRunSheet, on
               ))}
             </div>
           )}
+
+          {completedDeliveries.length > 0 && (
+            <button
+              type="button"
+              className="endShiftBottomBtn"
+              onClick={() => setShowSettlement(true)}
+            >
+              <Wallet size={16} /> Reconcile & Handover Cash to Depot ({money(totalCashCollected)})
+            </button>
+          )}
         </div>
       )}
+
+      {/* Slide-over Cash Settlement Drawer */}
+      <ShiftSettlementDrawer
+        isOpen={showSettlement}
+        onClose={() => setShowSettlement(false)}
+        completedDeliveries={completedDeliveries}
+        rider={rider}
+        onConfirmShiftDeposit={() => {
+          onClearRunSheet?.();
+          setShowSettlement(false);
+        }}
+      />
     </div>
   );
 }

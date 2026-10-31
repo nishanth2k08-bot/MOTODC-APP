@@ -61,18 +61,21 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/heads/main')
         with:
-          tag_name: v1.0.6
-          name: "MotoDC Partner Android APK (v1.0.6)"
+          tag_name: v1.0.7
+          name: "MotoDC Partner Android APK (v1.0.7)"
           body: |
-            ## 🚚 MotoDC Partner Delivery App (Android APK v1.0.6)
+            ## 🚚 MotoDC Partner Delivery App (Android APK v1.0.7)
             
             Download and install **MotoDC-Partner.apk** on any Android device.
             
-            ### What's New in v1.0.6:
-            * 📱 **Doorstep Dynamic UPI QR Code (Enhancement 2)**: Solves cash change headaches! Customers can scan an auto-generated NPCI QR code to pay exact amount using GPay, PhonePe, Paytm, BHIM, or Cred.
-            * ⚡ **Zero-Discrepancy Shift Reconciliation**: Orders paid via doorstep UPI QR are automatically categorized separately from physical cash-in-hand.
-            * 📊 **Shift HUD Dual Tally**: Real-time tracking of both Physical Cash and UPI digital settlements.
-            * 📍 **1-Tap Google Maps & WhatsApp 5-Min Alert**: Turn-by-turn routing and pre-arrival alerts directly from route queue.
+            ### What's New in v1.0.7:
+            * 💰 **Driver Shift Drawer & Cash Settlement HUD (Enhancement 3)**: Complete end-of-shift cash reconciliation drawer.
+            * 💵 **Interactive Banknote Counter**: Rapid tap calculator for ₹500, ₹200, ₹100, ₹50, ₹20, ₹10 notes to count cash before meeting the depot cashier.
+            * ⚖️ **Live Balance Validator**: Instantly flags match, shortage, or surplus against system COD records.
+            * 🏆 **Shift Earnings Calculator**: Transparent breakdown of delivery incentives (₹45/drop + performance bonus).
+            * 💬 **1-Tap WhatsApp Settlement Slip**: Sends pre-formatted cashier summary directly to the warehouse manager.
+            * 📱 **Doorstep Dynamic UPI QR Code (Enhancement 2)**: Instant scan-and-pay with GPay/PhonePe/Paytm.
+            * 📍 **1-Tap Google Maps Navigation & WhatsApp 5-Min Broadcast (Enhancement 1)**.
           files: release-output/MotoDC-Partner.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
