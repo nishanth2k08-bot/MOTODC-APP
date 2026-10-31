@@ -1,0 +1,11 @@
+{
+  "appId": "com.motodc.partner",
+  "appName": "MotoDC Partner",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "https"
+  },
+  "android": {
+    "allowMixedContent": true
+  }
+}

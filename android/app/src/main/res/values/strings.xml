@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">MotoDC Partner</string>
+    <string name="title_activity_main">MotoDC Partner</string>
+    <string name="package_name">com.motodc.partner</string>
+    <string name="custom_url_scheme">com.motodc.partner</string>
+</resources>
