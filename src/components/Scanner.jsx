@@ -13,14 +13,18 @@ export default function Scanner({ onOrderScanned, loading }) {
     setCameraError(null);
     try {
       if (!scannerRef.current) {
-        scannerRef.current = new Html5Qrcode('reader');
+        scannerRef.current = new Html5Qrcode('reader', {
+          experimentalFeatures: {
+            useBarCodeDetectorIfSupported: true,
+          },
+        });
       }
 
       await scannerRef.current.start(
         { facingMode: 'environment' },
         {
-          fps: 15,
-          qrbox: { width: 250, height: 170 },
+          fps: 20,
+          qrbox: { width: 280, height: 180 },
           aspectRatio: 1.0,
         },
         (decodedText) => {

@@ -1132,3 +1132,78 @@ body {
   cursor: pointer;
   padding: 4px;
 }
+
+/* ===================================================
+   AUTHENTICATION, OTP & CHANGE PASSWORD STYLING
+   =================================================== */
+.fieldHint {
+  display: block;
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+.forgotPinFooter {
+  margin-top: 20px;
+  text-align: center;
+  border-top: 1px solid var(--border);
+  padding-top: 14px;
+}
+.forgotPinBtn {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: color 0.2s;
+}
+.forgotPinBtn:hover {
+  color: var(--crimson);
+}
+.backToLoginBtn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  padding: 10px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 8px;
+  transition: all 0.2s;
+}
+.backToLoginBtn:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-primary);
+}
+.otpHelperRow {
+  display: flex;
+  gap: 10px;
+  margin-top: 8px;
+}
+.otpHelperRow .backToLoginBtn {
+  flex: 1;
+  margin-top: 0;
+}
+.resendBtn {
+  flex: 1;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: #38bdf8;
+  padding: 10px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.resendBtn:hover {
+  background: rgba(56, 189, 248, 0.1);
+}
+.changePasswordCard {
+  max-width: 440px;
+  animation: popIn 0.3s ease-out;
+}

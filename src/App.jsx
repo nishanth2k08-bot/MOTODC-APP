@@ -17,6 +17,7 @@ import VerifiedOrder from './components/VerifiedOrder';
 import DailyRunSheet from './components/DailyRunSheet';
 import InstallPrompt from './components/InstallPrompt';
 import Login from './components/Login';
+import ChangePassword from './components/ChangePassword';
 
 const money = (n) => '₹' + Number(n || 0).toLocaleString('en-IN');
 
@@ -27,6 +28,7 @@ export default function App() {
   const [loadingOrder, setLoadingOrder] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [deliveredSuccess, setDeliveredSuccess] = useState(null);
+  const [changePasswordSession, setChangePasswordSession] = useState(null);
 
   // Theme Management (Light / Dark)
   const [theme, setTheme] = useState(() => {
@@ -247,12 +249,31 @@ export default function App() {
     return sum + (item.isCod ? Number(item.total || 0) : 0);
   }, 0);
 
+  // If rider in Password Reset Flow -> Show Change Password Page
+  if (changePasswordSession) {
+    return (
+      <div className="appWrapper">
+        <Toaster position="top-center" toastOptions={{ duration: 3000 }} />
+        <ChangePassword
+          username={changePasswordSession.username}
+          resetToken={changePasswordSession.resetToken}
+          onSuccess={() => setChangePasswordSession(null)}
+        />
+      </div>
+    );
+  }
+
   // If no rider logged in, show Login Screen
   if (!rider) {
     return (
       <div className="appWrapper">
         <Toaster position="top-center" toastOptions={{ duration: 3000 }} />
-        <Login onLogin={handleLogin} theme={theme} onToggleTheme={toggleTheme} />
+        <Login
+          onLogin={handleLogin}
+          onEnterChangePassword={(user, token) => setChangePasswordSession({ username: user, resetToken: token })}
+          theme={theme}
+          onToggleTheme={toggleTheme}
+        />
       </div>
     );
   }
