@@ -61,19 +61,19 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/heads/main')
         with:
-          tag_name: v1.0.4
-          name: "MotoDC Partner Android APK (v1.0.4)"
+          tag_name: v1.0.5
+          name: "MotoDC Partner Android APK (v1.0.5)"
           body: |
-            ## 🚚 MotoDC Partner Delivery App (Android APK v1.0.4)
+            ## 🚚 MotoDC Partner Delivery App (Android APK v1.0.5)
             
             Download and install **MotoDC-Partner.apk** on any Android device.
             
-            ### What's New in v1.0.4:
-            * 🔑 **Permanent Cryptographic Keystore**: Locked in a dedicated keystore so future updates will never show "package conflicts with existing package".
-            * 🔢 **MDC-XXXX Alphanumeric Format**: Supports standard "MDC-" followed by random 4 digits (e.g. MDC-4829).
-            * 🗑️ **Rider Lifecycle & Deletion**: Admin can delete former drivers; login access is immediately revoked.
-            * 📲 **Method A 1-Click OTP Dispatch**: Direct 1-tap WhatsApp and native mobile SMS dispatch from Admin.
-            * ⚡ **Hardware Accelerated Barcode Scanner**: Instant barcode detection under 60ms.
+            ### What's New in v1.0.5:
+            * 📍 **1-Tap Google Maps Navigation**: Live turn-by-turn routing directly to customer doorsteps from your Daily Run Sheet.
+            * 💬 **1-Tap "Arriving in 5 Mins" WhatsApp Broadcast**: Pre-alerts customers with pre-filled Order ID & Handover PIN reminder.
+            * 📞 **1-Tap Call Customer**: Instant direct phone coordination from the run sheet.
+            * 📋 **Dynamic Run Sheet Route Queue**: Fetches today's active pending stops directly from live MotoDC database.
+            * 🔑 **1-Tap Handover & Verify Shortcut**: Seamless transition from stop to doorstep verification.
           files: release-output/MotoDC-Partner.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -406,6 +406,10 @@ export default function App() {
           <DailyRunSheet
             completedDeliveries={runSheet}
             onClearRunSheet={handleClearRunSheet}
+            onSelectStopForDelivery={(stop) => {
+              setVerifiedOrder(stop);
+              setActiveTab('scanner');
+            }}
           />
         )}
       </main>
