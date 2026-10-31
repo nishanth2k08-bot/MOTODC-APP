@@ -61,14 +61,15 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/heads/main')
         with:
-          tag_name: v1.0.3
-          name: "MotoDC Partner Android APK (v1.0.3)"
+          tag_name: v1.0.4
+          name: "MotoDC Partner Android APK (v1.0.4)"
           body: |
-            ## 🚚 MotoDC Partner Delivery App (Android APK v1.0.3)
+            ## 🚚 MotoDC Partner Delivery App (Android APK v1.0.4)
             
             Download and install **MotoDC-Partner.apk** on any Android device.
             
-            ### What's New in v1.0.3:
+            ### What's New in v1.0.4:
+            * 🔑 **Permanent Cryptographic Keystore**: Locked in a dedicated keystore so future updates will never show "package conflicts with existing package".
             * 🔢 **MDC-XXXX Alphanumeric Format**: Supports standard "MDC-" followed by random 4 digits (e.g. MDC-4829).
             * 🗑️ **Rider Lifecycle & Deletion**: Admin can delete former drivers; login access is immediately revoked.
             * 📲 **Method A 1-Click OTP Dispatch**: Direct 1-tap WhatsApp and native mobile SMS dispatch from Admin.
