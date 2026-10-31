@@ -163,10 +163,12 @@ export default function App() {
   };
 
   // Confirm Handover and mark order Delivered
-  const handleConfirmDelivery = async (order) => {
+  const handleConfirmDelivery = async (order, paymentMode = 'cash') => {
     setSubmitting(true);
     try {
-      const isCod = String(order.paymentMethod || '').toLowerCase() === 'cod';
+      const isCodOrder = String(order.paymentMethod || '').toLowerCase() === 'cod';
+      const isUpiDoorstep = paymentMode === 'upi_doorstep';
+      const physicalCashCollected = isCodOrder && !isUpiDoorstep;
 
       // 1. Try high-speed serverless API
       try {
@@ -177,6 +179,7 @@ export default function App() {
             docId: order.id,
             collectionType: order.collectionType,
             paymentMethod: order.paymentMethod,
+            paymentSettledVia: paymentMode,
             riderName: rider?.name || 'MotoDC Partner',
             riderId: rider?.riderId || 'MDC-R01',
           }),
@@ -200,10 +203,16 @@ export default function App() {
           history: arrayUnion({
             status: 'delivered',
             timestamp: new Date().toISOString(),
-            note: `Doorstep verified by ${rider?.name || 'Rider'} (${rider?.riderId || 'MDC-R01'}) via MotoDC Partner App`,
+            note: isUpiDoorstep
+              ? `Doorstep verified via UPI QR Code by ${rider?.name || 'Rider'} (${rider?.riderId || 'MDC-R01'}) via MotoDC Partner App`
+              : `Doorstep verified by ${rider?.name || 'Rider'} (${rider?.riderId || 'MDC-R01'}) via MotoDC Partner App`,
           }),
         };
-        if (isCod) {
+        if (isUpiDoorstep) {
+          updates.paymentStatus = 'paid';
+          updates.paymentMethod = 'upi_doorstep';
+          updates.paidVia = 'Doorstep UPI QR Code';
+        } else if (isCodOrder) {
           updates.paymentStatus = 'paid';
         }
         await updateDoc(orderRef, updates);
@@ -215,7 +224,8 @@ export default function App() {
         orderId: order.orderId || order.id,
         customerName: order.customer?.name || 'Customer',
         total: order.total || 0,
-        isCod,
+        isCod: physicalCashCollected,
+        paymentMode: isUpiDoorstep ? 'upi_doorstep' : (isCodOrder ? 'cash' : 'prepaid'),
         itemsCount: (order.items || []).length,
         deliveredBy: rider?.name || 'Rider',
         time: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
@@ -224,7 +234,7 @@ export default function App() {
       setRunSheet((prev) => [newEntry, ...prev]);
       setDeliveredSuccess(order);
       setVerifiedOrder(null);
-      toast.success('Delivery successfully logged & verified!');
+      toast.success(isUpiDoorstep ? 'Delivered & UPI Payment Confirmed!' : 'Delivery successfully logged & verified!');
     } catch (err) {
       console.error('Delivery update error:', err);
       toast.error(`Could not update status: ${err.message || 'Check network'}`);

@@ -6,7 +6,13 @@ import {
   ShieldCheck,
   RotateCcw,
   PackageCheck,
-  AlertTriangle
+  AlertTriangle,
+  QrCode,
+  Banknote,
+  Copy,
+  Check,
+  ExternalLink,
+  Sparkles
 } from 'lucide-react';
 import { verifyDeliveryPin } from '../deliveryPinUtil';
 
@@ -14,18 +20,50 @@ const money = (n) => '₹' + Number(n || 0).toLocaleString('en-IN');
 
 export default function VerifiedOrder({ order, onCancel, onConfirmDelivery, submitting }) {
   const [pinInput, setPinInput] = useState('');
+  const [paymentChoice, setPaymentChoice] = useState('cash'); // 'cash' | 'upi'
   const [codCollected, setCodCollected] = useState(false);
+  const [upiConfirmed, setUpiConfirmed] = useState(false);
+  const [copiedUpi, setCopiedUpi] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
   const isCod = String(order.paymentMethod || '').toLowerCase() === 'cod';
+  const orderIdClean = order.orderId || order.id || 'ORDER';
+  const upiId = 'motodc@upi';
+  const orderAmount = Number(order.total || 0);
+
+  // Dynamic NPCI Standard UPI Intent URI
+  const upiUrl = `upi://pay?pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent('MotoDC Automotive')}&am=${orderAmount}&tr=${encodeURIComponent(orderIdClean)}&tn=${encodeURIComponent(`MotoDC Order ${orderIdClean}`)}&cu=INR`;
+  const qrImgSrc = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(upiUrl)}&margin=10`;
+
+  const handleCopyUpi = () => {
+    try {
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(upiId);
+      }
+      setCopiedUpi(true);
+      setTimeout(() => setCopiedUpi(false), 2200);
+    } catch (e) {
+      console.warn('Copy failed:', e);
+    }
+  };
+
+  const handleOpenUpiApp = () => {
+    window.open(upiUrl, '_system');
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
     setErrorMsg('');
 
-    if (isCod && !codCollected) {
-      setErrorMsg(`Please confirm that you have collected ${money(order.total)} cash.`);
-      return;
+    if (isCod) {
+      if (paymentChoice === 'cash' && !codCollected) {
+        setErrorMsg(`Please confirm that you have collected ${money(order.total)} cash.`);
+        return;
+      }
+      if (paymentChoice === 'upi' && !upiConfirmed) {
+        setErrorMsg(`Please verify that the customer has completed the ${money(order.total)} UPI payment.`);
+        return;
+      }
     }
 
     if (!pinInput || pinInput.length !== 4) {
@@ -46,7 +84,9 @@ export default function VerifiedOrder({ order, onCancel, onConfirmDelivery, subm
     if (navigator.vibrate) {
       navigator.vibrate([100, 50, 150, 50, 200]);
     }
-    onConfirmDelivery(order);
+
+    const finalPaymentMode = isCod ? (paymentChoice === 'upi' ? 'upi_doorstep' : 'cash') : 'prepaid';
+    onConfirmDelivery(order, finalPaymentMode);
   };
 
   return (
@@ -57,7 +97,7 @@ export default function VerifiedOrder({ order, onCancel, onConfirmDelivery, subm
             <CheckCircle2 size={18} color="#22c55e" />
             Package Verified & Grounded
           </h3>
-          <div className="orderVerifiedId">Order #{order.orderId || order.id}</div>
+          <div className="orderVerifiedId">Order #{orderIdClean}</div>
         </div>
         <button type="button" className="cancelScanBtn" onClick={onCancel}>
           <RotateCcw size={12} style={{ display: 'inline', marginRight: '4px' }} />
@@ -65,14 +105,130 @@ export default function VerifiedOrder({ order, onCancel, onConfirmDelivery, subm
         </button>
       </div>
 
-      {/* Payment Banner */}
+      {/* Payment Banner / Mode Selection */}
       {isCod ? (
-        <div className="paymentNotice cod">
-          <div>
-            <b>⚠ CASH ON DELIVERY (COD)</b>
-            <small>Collect cash from customer before handing over package</small>
+        <div className="paymentChoiceBox">
+          <div className="paymentModeTabs">
+            <button
+              type="button"
+              className={`modeTabBtn ${paymentChoice === 'cash' ? 'active cash' : ''}`}
+              onClick={() => {
+                setPaymentChoice('cash');
+                setErrorMsg('');
+              }}
+            >
+              <Banknote size={15} /> Cash Payment
+            </button>
+            <button
+              type="button"
+              className={`modeTabBtn ${paymentChoice === 'upi' ? 'active upi' : ''}`}
+              onClick={() => {
+                setPaymentChoice('upi');
+                setErrorMsg('');
+              }}
+            >
+              <QrCode size={15} /> Dynamic UPI QR <span className="tabBadge">No Change</span>
+            </button>
           </div>
-          <div className="amountHighlight">{money(order.total)}</div>
+
+          {paymentChoice === 'cash' ? (
+            <div className="paymentNotice cod">
+              <div>
+                <b>⚠ CASH ON DELIVERY (COD)</b>
+                <small>Collect cash from customer before handing over package</small>
+              </div>
+              <div className="amountHighlight">{money(order.total)}</div>
+            </div>
+          ) : (
+            <div className="upiQrContainer">
+              <div className="upiQrHeader">
+                <div>
+                  <span className="upiHeaderBadge">
+                    <Sparkles size={11} /> Instant Doorstep Scan
+                  </span>
+                  <h4>Doorstep Dynamic UPI QR</h4>
+                  <p>Customer scans with any UPI app — exact amount preloaded</p>
+                </div>
+                <div className="upiAmountLarge">{money(order.total)}</div>
+              </div>
+
+              {/* QR Image Frame */}
+              <div className="upiQrFrame">
+                <div className="qrWhiteBg">
+                  <img
+                    src={qrImgSrc}
+                    alt={`UPI QR for ${money(order.total)}`}
+                    className="upiQrImage"
+                  />
+                </div>
+                <div className="upiQrInstruction">
+                  Exact amount of <b>{money(order.total)}</b> locked in QR
+                </div>
+              </div>
+
+              {/* Supported Apps Strip */}
+              <div className="upiAppsList">
+                <span className="upiAppTag gpay">GPay</span>
+                <span className="upiAppTag phonepe">PhonePe</span>
+                <span className="upiAppTag paytm">Paytm</span>
+                <span className="upiAppTag bhim">BHIM</span>
+                <span className="upiAppTag cred">Cred</span>
+                <span className="upiAppTag any">Any UPI App</span>
+              </div>
+
+              {/* UPI ID & Direct Actions */}
+              <div className="upiActionRow">
+                <div className="upiIdPill">
+                  <span>UPI ID:</span>
+                  <b>{upiId}</b>
+                  <button type="button" onClick={handleCopyUpi} className="copyUpiBtn">
+                    {copiedUpi ? <Check size={12} color="#22c55e" /> : <Copy size={12} />}
+                    {copiedUpi ? 'Copied' : 'Copy'}
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleOpenUpiApp}
+                  className="openUpiBtn"
+                  title="Open in UPI App on this device"
+                >
+                  <ExternalLink size={13} /> Open App
+                </button>
+              </div>
+
+              {/* Driver Confirmation State */}
+              <div className="upiConfirmBox">
+                {upiConfirmed ? (
+                  <div className="upiVerifiedBadge">
+                    <CheckCircle2 size={18} color="#22c55e" />
+                    <div>
+                      <strong>UPI Payment Confirmed</strong>
+                      <small>{money(order.total)} verified on customer screen</small>
+                    </div>
+                    <button
+                      type="button"
+                      className="upiChangeBtn"
+                      onClick={() => setUpiConfirmed(false)}
+                    >
+                      Change
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    className="upiMarkReceivedBtn"
+                    onClick={() => {
+                      setUpiConfirmed(true);
+                      setErrorMsg('');
+                      if (navigator.vibrate) navigator.vibrate(80);
+                    }}
+                  >
+                    <CheckCircle2 size={16} /> I Verified Customer Paid {money(order.total)} via UPI
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       ) : (
         <div className="paymentNotice prepaid">
@@ -168,16 +324,39 @@ export default function VerifiedOrder({ order, onCancel, onConfirmDelivery, subm
           </div>
         </div>
 
-        {/* COD Confirmation Checkbox */}
-        {isCod && (
-          <label className="codCheckboxLabel">
-            <input
-              type="checkbox"
-              checked={codCollected}
-              onChange={(e) => setCodCollected(e.target.checked)}
-            />
-            <span>I confirm I have received <b>{money(order.total)}</b> cash from customer</span>
-          </label>
+        {/* COD Confirmation Checkbox (Only if Cash mode selected) */}
+        {isCod && paymentChoice === 'cash' && (
+          <div style={{ marginBottom: '14px' }}>
+            <label className="codCheckboxLabel">
+              <input
+                type="checkbox"
+                checked={codCollected}
+                onChange={(e) => setCodCollected(e.target.checked)}
+              />
+              <span>I confirm I have received <b>{money(order.total)}</b> cash from customer</span>
+            </label>
+            <button
+              type="button"
+              onClick={() => setPaymentChoice('upi')}
+              style={{
+                marginTop: '8px',
+                width: '100%',
+                background: 'transparent',
+                border: 'none',
+                color: '#38bdf8',
+                fontSize: '11px',
+                fontWeight: 700,
+                textAlign: 'center',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '5px',
+              }}
+            >
+              <QrCode size={13} /> Customer has no cash change? Tap to switch to UPI QR code →
+            </button>
+          </div>
         )}
 
         {errorMsg && (

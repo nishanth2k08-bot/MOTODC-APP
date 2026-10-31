@@ -48,6 +48,10 @@ export default function DailyRunSheet({ completedDeliveries, onClearRunSheet, on
     return sum + (item.isCod ? Number(item.total || 0) : 0);
   }, 0);
 
+  const totalUpiCollected = completedDeliveries.reduce((sum, item) => {
+    return sum + (item.paymentMode === 'upi_doorstep' ? Number(item.total || 0) : 0);
+  }, 0);
+
   // 1-Tap Google Maps Turn-by-Turn Navigation
   const handleOpenGoogleMaps = (shipping) => {
     const addressParts = [shipping?.address, shipping?.city, shipping?.state, shipping?.pincode]
@@ -109,6 +113,17 @@ export default function DailyRunSheet({ completedDeliveries, onClearRunSheet, on
             <strong>{money(totalCashCollected)}</strong>
           </div>
         </div>
+        {totalUpiCollected > 0 && (
+          <div className="summaryItem">
+            <div className="summaryIcon" style={{ color: '#a855f7' }}>
+              <QrCode size={18} />
+            </div>
+            <div>
+              <small>UPI Settled</small>
+              <strong style={{ color: '#c084fc' }}>{money(totalUpiCollected)}</strong>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Sub Tabs: Pending Stops vs Completed */}
@@ -399,8 +414,16 @@ export default function DailyRunSheet({ completedDeliveries, onClearRunSheet, on
                     <small>{it.customerName || 'Customer'} • {it.itemsCount || 1} items</small>
                   </div>
                   <div className="runSheetRight">
-                    <span className={`runSheetAmount ${it.isCod ? 'cod' : 'prepaid'}`}>
-                      {it.isCod ? `COD: ${money(it.total)}` : 'PREPAID'}
+                    <span
+                      className={`runSheetAmount ${
+                        it.paymentMode === 'upi_doorstep' ? 'upi' : it.isCod ? 'cod' : 'prepaid'
+                      }`}
+                    >
+                      {it.paymentMode === 'upi_doorstep'
+                        ? `UPI: ${money(it.total)}`
+                        : it.isCod
+                        ? `CASH: ${money(it.total)}`
+                        : 'PREPAID'}
                     </span>
                     <span className="runSheetTime">{it.time || 'Delivered'}</span>
                   </div>

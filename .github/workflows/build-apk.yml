@@ -61,19 +61,18 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/heads/main')
         with:
-          tag_name: v1.0.5
-          name: "MotoDC Partner Android APK (v1.0.5)"
+          tag_name: v1.0.6
+          name: "MotoDC Partner Android APK (v1.0.6)"
           body: |
-            ## 🚚 MotoDC Partner Delivery App (Android APK v1.0.5)
+            ## 🚚 MotoDC Partner Delivery App (Android APK v1.0.6)
             
             Download and install **MotoDC-Partner.apk** on any Android device.
             
-            ### What's New in v1.0.5:
-            * 📍 **1-Tap Google Maps Navigation**: Live turn-by-turn routing directly to customer doorsteps from your Daily Run Sheet.
-            * 💬 **1-Tap "Arriving in 5 Mins" WhatsApp Broadcast**: Pre-alerts customers with pre-filled Order ID & Handover PIN reminder.
-            * 📞 **1-Tap Call Customer**: Instant direct phone coordination from the run sheet.
-            * 📋 **Dynamic Run Sheet Route Queue**: Fetches today's active pending stops directly from live MotoDC database.
-            * 🔑 **1-Tap Handover & Verify Shortcut**: Seamless transition from stop to doorstep verification.
+            ### What's New in v1.0.6:
+            * 📱 **Doorstep Dynamic UPI QR Code (Enhancement 2)**: Solves cash change headaches! Customers can scan an auto-generated NPCI QR code to pay exact amount using GPay, PhonePe, Paytm, BHIM, or Cred.
+            * ⚡ **Zero-Discrepancy Shift Reconciliation**: Orders paid via doorstep UPI QR are automatically categorized separately from physical cash-in-hand.
+            * 📊 **Shift HUD Dual Tally**: Real-time tracking of both Physical Cash and UPI digital settlements.
+            * 📍 **1-Tap Google Maps & WhatsApp 5-Min Alert**: Turn-by-turn routing and pre-arrival alerts directly from route queue.
           files: release-output/MotoDC-Partner.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
