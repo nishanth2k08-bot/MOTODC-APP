@@ -7,6 +7,7 @@ export default function Scanner({ onOrderScanned, loading }) {
   const [cameraError, setCameraError] = useState(null);
   const [manualId, setManualId] = useState('');
   const scannerRef = useRef(null);
+  const lastScanRef = useRef({ text: '', time: 0 });
 
   const startCamera = async () => {
     setCameraError(null);
@@ -23,13 +24,30 @@ export default function Scanner({ onOrderScanned, loading }) {
           aspectRatio: 1.0,
         },
         (decodedText) => {
-          if (decodedText) {
-            // Silent haptic vibration
-            if (navigator.vibrate) {
-              navigator.vibrate([80, 40, 100]);
-            }
-            onOrderScanned(decodedText);
+          if (!decodedText) return;
+          const now = Date.now();
+          // Prevent repeated triggers of the same barcode within 3 seconds
+          if (
+            decodedText === lastScanRef.current.text &&
+            now - lastScanRef.current.time < 3000
+          ) {
+            return;
           }
+          lastScanRef.current = { text: decodedText, time: now };
+
+          // Pause video processing while verifying package
+          try {
+            if (scannerRef.current && scannerRef.current.isScanning) {
+              scannerRef.current.pause(true);
+            }
+          } catch (_) {}
+
+          // Silent haptic vibration
+          if (navigator.vibrate) {
+            navigator.vibrate([80, 40, 100]);
+          }
+
+          onOrderScanned(decodedText);
         },
         () => {} // Silent on per-frame non-match
       );
@@ -41,6 +59,15 @@ export default function Scanner({ onOrderScanned, loading }) {
       setCameraActive(false);
     }
   };
+
+  // Resume camera scanning if lookup finishes or user restarts
+  useEffect(() => {
+    if (!loading && scannerRef.current && cameraActive) {
+      try {
+        scannerRef.current.resume();
+      } catch (_) {}
+    }
+  }, [loading, cameraActive]);
 
   const stopCamera = async () => {
     if (scannerRef.current && scannerRef.current.isScanning) {

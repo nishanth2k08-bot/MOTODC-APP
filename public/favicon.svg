@@ -1,1 +1,93 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="#0d1016"/><path d="M10 17h44v8H38v24h-9V25H10z" fill="#ff3157"/><path d="M40 25h8v24h-8z" fill="#f8fafc"/></svg>
+
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <radialGradient id="darkBg" cx="50%" cy="38%" r="70%">
+      <stop offset="0%" stop-color="#141923"/>
+      <stop offset="60%" stop-color="#0a0d14"/>
+      <stop offset="100%" stop-color="#040609"/>
+    </radialGradient>
+
+    <linearGradient id="neonRed" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ff3366"/>
+      <stop offset="50%" stop-color="#e11d48"/>
+      <stop offset="100%" stop-color="#9f1239"/>
+    </linearGradient>
+
+    <linearGradient id="chrome" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="30%" stop-color="#cbd5e1"/>
+      <stop offset="70%" stop-color="#64748b"/>
+      <stop offset="100%" stop-color="#334155"/>
+    </linearGradient>
+
+    <linearGradient id="titaniumRing" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#334155"/>
+      <stop offset="50%" stop-color="#1e293b"/>
+      <stop offset="100%" stop-color="#0f172a"/>
+    </linearGradient>
+
+    <filter id="crimsonGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="12" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+
+  <!-- Deep Automotive Matte Background -->
+  <rect width="512" height="512" rx="112" fill="url(#darkBg)"/>
+
+  <!-- Outer Titanium Bevel Ring -->
+  <circle cx="256" cy="256" r="230" fill="none" stroke="url(#titaniumRing)" stroke-width="8"/>
+  <circle cx="256" cy="256" r="222" fill="none" stroke="#e11d48" stroke-width="2.5" opacity="0.45"/>
+
+  <!-- Subtle Tachometer / Speed Tick Marks -->
+  <g opacity="0.35" stroke="#94a3b8" stroke-width="2.5">
+    <line x1="256" y1="36" x2="256" y2="48"/>
+    <line x1="256" y1="464" x2="256" y2="476"/>
+    <line x1="36" y1="256" x2="48" y2="256"/>
+    <line x1="464" y1="256" x2="476" y2="256"/>
+    <line x1="100" y1="100" x2="110" y2="110"/>
+    <line x1="412" y1="100" x2="402" y2="110"/>
+    <line x1="100" y1="412" x2="110" y2="402"/>
+    <line x1="412" y1="412" x2="402" y2="402"/>
+  </g>
+
+  <!-- Aerodynamic Swept Wings (Left & Right) -->
+  <g id="wings" opacity="0.9">
+    <!-- Left Wing Layers -->
+    <path d="M 110,210 L 210,240 L 190,265 L 90,230 Z" fill="url(#chrome)" opacity="0.8"/>
+    <path d="M 80,245 L 200,280 L 180,305 L 65,268 Z" fill="url(#neonRed)" filter="url(#crimsonGlow)" opacity="0.85"/>
+    <path d="M 95,285 L 185,315 L 170,335 L 82,305 Z" fill="url(#chrome)" opacity="0.6"/>
+
+    <!-- Right Wing Layers (Mirrored) -->
+    <path d="M 402,210 L 302,240 L 322,265 L 422,230 Z" fill="url(#chrome)" opacity="0.8"/>
+    <path d="M 432,245 L 312,280 L 332,305 L 447,268 Z" fill="url(#neonRed)" filter="url(#crimsonGlow)" opacity="0.85"/>
+    <path d="M 417,285 L 327,315 L 342,335 L 430,305 Z" fill="url(#chrome)" opacity="0.6"/>
+  </g>
+
+  <!-- Center Shield Core & Monogram -->
+  <g transform="translate(0, 0)">
+    <!-- Back Shield -->
+    <path d="M 256,120 L 336,180 L 316,330 L 256,380 L 196,330 L 176,180 Z" 
+          fill="#0c1017" stroke="url(#chrome)" stroke-width="5"/>
+
+    <!-- Inner Shield Red Neon Outline -->
+    <path d="M 256,140 L 320,190 L 302,315 L 256,355 L 210,315 L 192,190 Z" 
+          fill="#111622" stroke="url(#neonRed)" stroke-width="4" filter="url(#crimsonGlow)"/>
+
+    <!-- Stylized Aggressive "MDC" Automotive Emblem (Precision Geometry) -->
+    <path d="M 215,285 L 215,195 L 240,195 L 256,238 L 272,195 L 297,195 L 297,285 L 277,285 L 277,235 L 263,270 L 249,270 L 235,235 L 235,285 Z" 
+          fill="url(#chrome)"/>
+
+    <!-- Velocity Chevrons / Handover Arrow (High Speed Symbol) -->
+    <polygon points="256,310 236,290 248,290 256,298 264,290 276,290" fill="url(#neonRed)"/>
+    <polygon points="256,328 240,312 250,312 256,318 262,312 272,312" fill="#ffffff" opacity="0.9"/>
+  </g>
+
+  <!-- Bottom Brand Signature -->
+  <text x="256" y="432" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="28" font-weight="900" fill="#ffffff" letter-spacing="6" text-anchor="middle">
+    MOTODC
+  </text>
+  <text x="256" y="456" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="13" font-weight="800" fill="#e11d48" letter-spacing="4" text-anchor="middle">
+    PARTNER
+  </text>
+</svg>

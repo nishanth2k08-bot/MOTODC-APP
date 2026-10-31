@@ -61,21 +61,18 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/heads/main')
         with:
-          tag_name: v1.0.0
-          name: "MotoDC Partner Android APK (v1.0.0)"
+          tag_name: v1.0.1
+          name: "MotoDC Partner Android APK (v1.0.1)"
           body: |
-            ## 🚚 MotoDC Partner Delivery App (Android APK)
+            ## 🚚 MotoDC Partner Delivery App (Android APK v1.0.1)
             
             Download and install **MotoDC-Partner.apk** on any Android device.
             
-            ### Features Included:
-            * 📷 High-Speed Barcode & QR Code Scanner (Rear Camera + Laser Reticle)
-            * 📦 Visual Product Verification (Product Thumbnail Images + Quantities)
-            * 💵 COD Cash Collection Checklist & Prepaid Badges
-            * 🔒 Customer Doorstep 4-Digit Handover PIN Verification
-            * 📞 1-Tap Customer Phone Dialing & 🗺️ Turn-by-Turn Google Maps Navigation
-            * 📋 Daily Shift Run Sheet & Cash Tally
-            * 📳 Silent Haptic Vibration Feedback
+            ### What's New in v1.0.1:
+            * 🎨 **New Luxury Automotive Brand Emblem**: Designed specifically for Android 8+ Adaptive Icons with obsidian black backing and glowing ruby winged shield.
+            * ⚡ **Fixed Barcode Scanner Error**: Resolved Firebase permission block via dedicated high-speed serverless delivery API.
+            * 🔄 **Scan Debounce & Pause**: Prevents repeated scan triggers on the same barcode; seamlessly resumes after package verification.
+            * 📱 **In-Place Update Support**: Upgraded `versionCode 2` so you can tap "Update" directly over your existing install without uninstalling!
           files: release-output/MotoDC-Partner.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

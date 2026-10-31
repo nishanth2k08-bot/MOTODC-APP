@@ -96,10 +96,10 @@ export default function App() {
     }
   }, [runSheet]);
 
-  // Lookup order in Firestore by scanned text / typed ID
+  // Lookup order by scanned text / typed ID
   const handleOrderScanned = async (queryText) => {
     if (!queryText || loadingOrder) return;
-    const clean = String(queryText).trim();
+    const clean = String(queryText).replace(/^#/, '').trim();
     if (!clean) return;
 
     setLoadingOrder(true);
@@ -107,64 +107,105 @@ export default function App() {
     setDeliveredSuccess(null);
 
     try {
-      const [codSnap, onlineSnap] = await Promise.all([
-        getDocs(collection(db, 'orders', 'cod orders', 'records')),
-        getDocs(collection(db, 'orders', 'online orders', 'records')),
-      ]);
+      // 1. High-speed backend API (bypasses Firestore client-rule roadblocks)
+      const apiUrl = `https://motodc-official.vercel.app/api/delivery-partner?q=${encodeURIComponent(clean)}`;
+      const response = await fetch(apiUrl);
+      const data = await response.json().catch(() => ({}));
 
-      const all = [
-        ...codSnap.docs.map((d) => ({ ...d.data(), id: d.id, collectionType: 'cod orders' })),
-        ...onlineSnap.docs.map((d) => ({ ...d.data(), id: d.id, collectionType: 'online orders' })),
-      ];
-
-      const match = all.find((o) => {
-        const id1 = String(o.orderId || '').toLowerCase().trim();
-        const id2 = String(o.id || '').toLowerCase().trim();
-        const q = clean.toLowerCase();
-        return id1 === q || id2 === q || id1.includes(q) || q.includes(id1);
-      });
-
-      if (!match) {
-        toast.error(`No order found matching "${clean}". Check barcode label.`);
-      } else {
-        toast.success(`Found order #${match.orderId || match.id}`);
-        setVerifiedOrder(match);
+      if (response.ok && data.order) {
+        toast.success(`Found order #${data.order.orderId || data.order.id}`);
+        setVerifiedOrder(data.order);
+        return;
       }
+
+      if (response.status === 404 || data.error) {
+        toast.error(data.error || `No order found matching "${clean}".`);
+        return;
+      }
+
+      throw new Error(data.error || 'Server error looking up order');
     } catch (err) {
-      console.error('Order lookup error:', err);
-      toast.error('Could not verify barcode. Check internet connection.');
+      console.warn('Backend API lookup failed, trying direct Firestore fallback:', err);
+      // 2. Direct Firestore fallback
+      try {
+        const [codSnap, onlineSnap] = await Promise.all([
+          getDocs(collection(db, 'orders', 'cod orders', 'records')),
+          getDocs(collection(db, 'orders', 'online orders', 'records')),
+        ]);
+
+        const all = [
+          ...codSnap.docs.map((d) => ({ ...d.data(), id: d.id, collectionType: 'cod orders' })),
+          ...onlineSnap.docs.map((d) => ({ ...d.data(), id: d.id, collectionType: 'online orders' })),
+        ];
+
+        const match = all.find((o) => {
+          const id1 = String(o.orderId || '').toLowerCase().trim();
+          const id2 = String(o.id || '').toLowerCase().trim();
+          const q = clean.toLowerCase();
+          return id1 === q || id2 === q || id1.includes(q) || q.includes(id1);
+        });
+
+        if (!match) {
+          toast.error(`No order found matching "${clean}". Check barcode label.`);
+        } else {
+          toast.success(`Found order #${match.orderId || match.id}`);
+          setVerifiedOrder(match);
+        }
+      } catch (directErr) {
+        console.error('All lookup paths failed:', directErr);
+        toast.error(`Lookup failed: ${directErr.message || 'Check connection'}`);
+      }
     } finally {
       setLoadingOrder(false);
     }
   };
 
-  // Confirm Handover and mark order Delivered in Firebase
+  // Confirm Handover and mark order Delivered
   const handleConfirmDelivery = async (order) => {
     setSubmitting(true);
     try {
       const isCod = String(order.paymentMethod || '').toLowerCase() === 'cod';
-      const orderRef = doc(db, 'orders', order.collectionType, 'records', order.id);
 
-      const updates = {
-        orderStatus: 'delivered',
-        deliveredAt: Timestamp.now(),
-        deliveredBy: {
-          riderName: rider?.name || 'MotoDC Partner',
-          riderId: rider?.riderId || 'MDC-R01',
-          timestamp: new Date().toISOString(),
-        },
-        history: arrayUnion({
-          status: 'delivered',
-          timestamp: new Date().toISOString(),
-          note: `Doorstep verified by ${rider?.name || 'Rider'} (${rider?.riderId || 'MDC-R01'}) via MotoDC Partner App`,
-        }),
-      };
+      // 1. Try high-speed serverless API
+      try {
+        const res = await fetch('https://motodc-official.vercel.app/api/delivery-partner', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            docId: order.id,
+            collectionType: order.collectionType,
+            paymentMethod: order.paymentMethod,
+            riderName: rider?.name || 'MotoDC Partner',
+            riderId: rider?.riderId || 'MDC-R01',
+          }),
+        });
 
-      if (isCod) {
-        updates.paymentStatus = 'paid';
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.error || 'Server rejected delivery update');
+        }
+      } catch (apiErr) {
+        console.warn('API update failed, trying direct Firestore update:', apiErr);
+        const orderRef = doc(db, 'orders', order.collectionType, 'records', order.id);
+        const updates = {
+          orderStatus: 'delivered',
+          deliveredAt: Timestamp.now(),
+          deliveredBy: {
+            riderName: rider?.name || 'MotoDC Partner',
+            riderId: rider?.riderId || 'MDC-R01',
+            timestamp: new Date().toISOString(),
+          },
+          history: arrayUnion({
+            status: 'delivered',
+            timestamp: new Date().toISOString(),
+            note: `Doorstep verified by ${rider?.name || 'Rider'} (${rider?.riderId || 'MDC-R01'}) via MotoDC Partner App`,
+          }),
+        };
+        if (isCod) {
+          updates.paymentStatus = 'paid';
+        }
+        await updateDoc(orderRef, updates);
       }
-
-      await updateDoc(orderRef, updates);
 
       // Add to today's run sheet
       const newEntry = {
@@ -184,7 +225,7 @@ export default function App() {
       toast.success('Delivery successfully logged & verified!');
     } catch (err) {
       console.error('Delivery update error:', err);
-      toast.error('Could not update status in database. Check internet connection.');
+      toast.error(`Could not update status: ${err.message || 'Check network'}`);
     } finally {
       setSubmitting(false);
     }
