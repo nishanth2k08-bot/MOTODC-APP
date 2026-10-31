@@ -12,18 +12,20 @@ import {
   Copy,
   Check,
   ExternalLink,
-  Sparkles
+  Sparkles,
+  WifiOff
 } from 'lucide-react';
 import { verifyDeliveryPin } from '../deliveryPinUtil';
 
 const money = (n) => '₹' + Number(n || 0).toLocaleString('en-IN');
 
-export default function VerifiedOrder({ order, onCancel, onConfirmDelivery, submitting }) {
+export default function VerifiedOrder({ order, onCancel, onConfirmDelivery, submitting, isOnline = true }) {
   const [pinInput, setPinInput] = useState('');
   const [paymentChoice, setPaymentChoice] = useState('cash'); // 'cash' | 'upi'
   const [codCollected, setCodCollected] = useState(false);
   const [upiConfirmed, setUpiConfirmed] = useState(false);
   const [copiedUpi, setCopiedUpi] = useState(false);
+  const [qrImgError, setQrImgError] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
   const isCod = String(order.paymentMethod || '').toLowerCase() === 'cod';
@@ -105,6 +107,17 @@ export default function VerifiedOrder({ order, onCancel, onConfirmDelivery, subm
         </button>
       </div>
 
+      {/* Offline Mode / Basement Alert */}
+      {!isOnline && (
+        <div className="offlineHandoverNotice">
+          <WifiOff size={15} color="#f59e0b" style={{ flexShrink: 0 }} />
+          <div>
+            <b>Apartment Basement / Offline Mode Active</b>
+            <small>Security PIN verification works 100% offline. Handover will be recorded locally and auto-synced when you ride back into range.</small>
+          </div>
+        </div>
+      )}
+
       {/* Payment Banner / Mode Selection */}
       {isCod ? (
         <div className="paymentChoiceBox">
@@ -155,11 +168,22 @@ export default function VerifiedOrder({ order, onCancel, onConfirmDelivery, subm
               {/* QR Image Frame */}
               <div className="upiQrFrame">
                 <div className="qrWhiteBg">
-                  <img
-                    src={qrImgSrc}
-                    alt={`UPI QR for ${money(order.total)}`}
-                    className="upiQrImage"
-                  />
+                  {qrImgError || !isOnline ? (
+                    <div className="offlineQrPlaceholder">
+                      <QrCode size={48} color="#a855f7" />
+                      <div className="offlineQrText">
+                        <b>Offline Mode QR</b>
+                        <small>Scan via UPI or enter ID below</small>
+                      </div>
+                    </div>
+                  ) : (
+                    <img
+                      src={qrImgSrc}
+                      alt={`UPI QR for ${money(order.total)}`}
+                      className="upiQrImage"
+                      onError={() => setQrImgError(true)}
+                    />
+                  )}
                 </div>
                 <div className="upiQrInstruction">
                   Exact amount of <b>{money(order.total)}</b> locked in QR

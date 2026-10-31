@@ -10,7 +10,10 @@ import {
   IndianRupee,
   LogOut,
   Sun,
-  Moon
+  Moon,
+  WifiOff,
+  RefreshCw,
+  Zap
 } from 'lucide-react';
 import Scanner from './components/Scanner';
 import VerifiedOrder from './components/VerifiedOrder';
@@ -98,6 +101,103 @@ export default function App() {
     }
   }, [runSheet]);
 
+  // Offline-First Handover Sync Queue (Basements & Dead Zones)
+  const [offlineQueue, setOfflineQueue] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('motodc_offline_sync_queue') || '[]');
+    } catch {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('motodc_offline_sync_queue', JSON.stringify(offlineQueue));
+    } catch (e) {
+      console.warn('Offline queue save error:', e);
+    }
+  }, [offlineQueue]);
+
+  const [isOnline, setIsOnline] = useState(() => (typeof navigator !== 'undefined' ? navigator.onLine : true));
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  // Network listener & auto-sync trigger
+  useEffect(() => {
+    const handleOnline = () => {
+      setIsOnline(true);
+      toast.success('📶 Back online! Testing cloud sync...');
+      flushOfflineQueue();
+    };
+    const handleOffline = () => {
+      setIsOnline(false);
+      toast('📶 Basement/dead zone detected. Handovers will be saved locally.', { icon: '⚠️' });
+    };
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, [offlineQueue]);
+
+  // Flush offline queue to cloud serverless API
+  const flushOfflineQueue = async (manual = false) => {
+    const currentQueue = JSON.parse(localStorage.getItem('motodc_offline_sync_queue') || '[]');
+    if (currentQueue.length === 0) {
+      if (manual) toast.success('All deliveries are already in sync with cloud!');
+      return;
+    }
+
+    if (isSyncing) return;
+    setIsSyncing(true);
+
+    const remaining = [];
+    let syncedCount = 0;
+
+    for (const item of currentQueue) {
+      try {
+        const res = await fetch('https://motodc-official.vercel.app/api/delivery-partner', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            docId: item.docId,
+            collectionType: item.collectionType,
+            paymentMethod: item.paymentMethod,
+            paymentSettledVia: item.paymentSettledVia,
+            riderName: item.riderName,
+            riderId: item.riderId,
+          }),
+        });
+
+        if (res.ok) {
+          syncedCount++;
+          // Mark as synced in runSheet state
+          setRunSheet((prev) =>
+            prev.map((entry) =>
+              entry.orderId === item.orderId ? { ...entry, pendingSync: false } : entry
+            )
+          );
+        } else {
+          remaining.push(item);
+        }
+      } catch (err) {
+        console.warn(`Could not sync #${item.orderId}:`, err);
+        remaining.push(item);
+      }
+    }
+
+    setOfflineQueue(remaining);
+    setIsSyncing(false);
+
+    if (syncedCount > 0) {
+      toast.success(`⚡ Synced ${syncedCount} offline delivery${syncedCount > 1 ? 'ies' : ''} to cloud!`);
+    } else if (manual && remaining.length > 0) {
+      toast.error('Could not reach cloud. Still in offline mode.');
+    }
+  };
+
   // Lookup order by scanned text / typed ID
   const handleOrderScanned = async (queryText) => {
     if (!queryText || loadingOrder) return;
@@ -162,66 +262,99 @@ export default function App() {
     }
   };
 
-  // Confirm Handover and mark order Delivered
+  // Confirm Handover and mark order Delivered (Offline-First Resilient)
   const handleConfirmDelivery = async (order, paymentMode = 'cash') => {
     setSubmitting(true);
     try {
       const isCodOrder = String(order.paymentMethod || '').toLowerCase() === 'cod';
       const isUpiDoorstep = paymentMode === 'upi_doorstep';
       const physicalCashCollected = isCodOrder && !isUpiDoorstep;
+      const orderIdClean = order.orderId || order.id;
 
-      // 1. Try high-speed serverless API
-      try {
-        const res = await fetch('https://motodc-official.vercel.app/api/delivery-partner', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            docId: order.id,
-            collectionType: order.collectionType,
-            paymentMethod: order.paymentMethod,
-            paymentSettledVia: paymentMode,
-            riderName: rider?.name || 'MotoDC Partner',
-            riderId: rider?.riderId || 'MDC-R01',
-          }),
-        });
+      let savedToCloud = false;
 
-        if (!res.ok) {
-          const errData = await res.json().catch(() => ({}));
-          throw new Error(errData.error || 'Server rejected delivery update');
+      // 1. If device reports online, attempt cloud serverless API or direct Firestore
+      if (navigator.onLine) {
+        try {
+          const res = await fetch('https://motodc-official.vercel.app/api/delivery-partner', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              docId: order.id,
+              collectionType: order.collectionType,
+              paymentMethod: order.paymentMethod,
+              paymentSettledVia: paymentMode,
+              riderName: rider?.name || 'MotoDC Partner',
+              riderId: rider?.riderId || 'MDC-R01',
+            }),
+          });
+
+          if (res.ok) {
+            savedToCloud = true;
+          }
+        } catch (apiErr) {
+          console.warn('API cloud update failed, trying direct Firestore update:', apiErr);
+          try {
+            const orderRef = doc(db, 'orders', order.collectionType, 'records', order.id);
+            const updates = {
+              orderStatus: 'delivered',
+              deliveredAt: Timestamp.now(),
+              deliveredBy: {
+                riderName: rider?.name || 'MotoDC Partner',
+                riderId: rider?.riderId || 'MDC-R01',
+                timestamp: new Date().toISOString(),
+              },
+              history: arrayUnion({
+                status: 'delivered',
+                timestamp: new Date().toISOString(),
+                note: isUpiDoorstep
+                  ? `Doorstep verified via UPI QR Code by ${rider?.name || 'Rider'} (${rider?.riderId || 'MDC-R01'}) via MotoDC Partner App`
+                  : `Doorstep verified by ${rider?.name || 'Rider'} (${rider?.riderId || 'MDC-R01'}) via MotoDC Partner App`,
+              }),
+            };
+            if (isUpiDoorstep) {
+              updates.paymentStatus = 'paid';
+              updates.paymentMethod = 'upi_doorstep';
+              updates.paidVia = 'Doorstep UPI QR Code';
+            } else if (isCodOrder) {
+              updates.paymentStatus = 'paid';
+            }
+            await updateDoc(orderRef, updates);
+            savedToCloud = true;
+          } catch (fireErr) {
+            console.warn('Direct Firestore fallback failed (network dead zone):', fireErr);
+            savedToCloud = false;
+          }
         }
-      } catch (apiErr) {
-        console.warn('API update failed, trying direct Firestore update:', apiErr);
-        const orderRef = doc(db, 'orders', order.collectionType, 'records', order.id);
-        const updates = {
-          orderStatus: 'delivered',
-          deliveredAt: Timestamp.now(),
-          deliveredBy: {
-            riderName: rider?.name || 'MotoDC Partner',
-            riderId: rider?.riderId || 'MDC-R01',
-            timestamp: new Date().toISOString(),
-          },
-          history: arrayUnion({
-            status: 'delivered',
-            timestamp: new Date().toISOString(),
-            note: isUpiDoorstep
-              ? `Doorstep verified via UPI QR Code by ${rider?.name || 'Rider'} (${rider?.riderId || 'MDC-R01'}) via MotoDC Partner App`
-              : `Doorstep verified by ${rider?.name || 'Rider'} (${rider?.riderId || 'MDC-R01'}) via MotoDC Partner App`,
-          }),
-        };
-        if (isUpiDoorstep) {
-          updates.paymentStatus = 'paid';
-          updates.paymentMethod = 'upi_doorstep';
-          updates.paidVia = 'Doorstep UPI QR Code';
-        } else if (isCodOrder) {
-          updates.paymentStatus = 'paid';
-        }
-        await updateDoc(orderRef, updates);
       }
 
-      // Add to today's run sheet
+      // 2. If not saved to cloud (basement / elevator / dead zone), queue in offline storage
+      if (!savedToCloud) {
+        const queueItem = {
+          queueId: `sync_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+          docId: order.id,
+          orderId: orderIdClean,
+          collectionType: order.collectionType,
+          paymentMethod: order.paymentMethod,
+          paymentSettledVia: paymentMode,
+          riderName: rider?.name || 'MotoDC Partner',
+          riderId: rider?.riderId || 'MDC-R01',
+          timestamp: new Date().toISOString(),
+        };
+
+        setOfflineQueue((prev) => [queueItem, ...prev]);
+        toast('📶 Offline Mode: Handover recorded locally. Will auto-sync when network returns.', {
+          icon: '💾',
+          duration: 4000,
+        });
+      } else {
+        toast.success(isUpiDoorstep ? 'Delivered & UPI Payment Confirmed!' : 'Delivery verified & synced to cloud!');
+      }
+
+      // 3. Add to today's run sheet (Always succeeds!)
       const newEntry = {
         id: order.id,
-        orderId: order.orderId || order.id,
+        orderId: orderIdClean,
         customerName: order.customer?.name || 'Customer',
         total: order.total || 0,
         isCod: physicalCashCollected,
@@ -229,15 +362,15 @@ export default function App() {
         itemsCount: (order.items || []).length,
         deliveredBy: rider?.name || 'Rider',
         time: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
+        pendingSync: !savedToCloud,
       };
 
       setRunSheet((prev) => [newEntry, ...prev]);
-      setDeliveredSuccess(order);
+      setDeliveredSuccess({ ...order, wasSavedOffline: !savedToCloud });
       setVerifiedOrder(null);
-      toast.success(isUpiDoorstep ? 'Delivered & UPI Payment Confirmed!' : 'Delivery successfully logged & verified!');
     } catch (err) {
-      console.error('Delivery update error:', err);
-      toast.error(`Could not update status: ${err.message || 'Check network'}`);
+      console.error('Delivery update unexpected exception:', err);
+      toast.error(`Error logging delivery: ${err.message || 'Please retry'}`);
     } finally {
       setSubmitting(false);
     }
@@ -300,6 +433,19 @@ export default function App() {
         </div>
 
         <div className="headerActions">
+          {/* Offline / Pending Sync Status Pill */}
+          {(!isOnline || offlineQueue.length > 0) && (
+            <button
+              type="button"
+              className={`offlineSyncPill ${!isOnline ? 'disconnected' : 'pending'}`}
+              onClick={() => flushOfflineQueue(true)}
+              title={!isOnline ? 'Basement/Offline - Tap to test sync' : `${offlineQueue.length} handovers queued for cloud upload`}
+            >
+              {!isOnline ? <WifiOff size={13} /> : <RefreshCw size={13} className={isSyncing ? 'spinning' : ''} />}
+              <span>{!isOnline ? 'Offline' : `${offlineQueue.length} Sync`}</span>
+            </button>
+          )}
+
           {/* Day / Night Theme Toggle */}
           <button
             type="button"
@@ -387,6 +533,7 @@ export default function App() {
             {verifiedOrder && (
               <VerifiedOrder
                 order={verifiedOrder}
+                isOnline={isOnline}
                 onCancel={() => setVerifiedOrder(null)}
                 onConfirmDelivery={handleConfirmDelivery}
                 submitting={submitting}
@@ -404,6 +551,12 @@ export default function App() {
                   Order <b>#{deliveredSuccess.orderId || deliveredSuccess.id}</b> marked as delivered by{' '}
                   <b>{rider.name}</b>.
                 </p>
+                {deliveredSuccess.wasSavedOffline && (
+                  <div className="offlineSuccessNotice">
+                    <WifiOff size={14} color="#f59e0b" />
+                    <span>Saved locally in basement/dead zone. Will auto-sync when network returns!</span>
+                  </div>
+                )}
                 <button type="button" className="nextScanBtn" onClick={handleNextScan}>
                   <Camera size={16} /> Scan Next Package
                 </button>
@@ -416,6 +569,9 @@ export default function App() {
           <DailyRunSheet
             completedDeliveries={runSheet}
             rider={rider}
+            offlineQueue={offlineQueue}
+            onSyncQueue={flushOfflineQueue}
+            isOnline={isOnline}
             onClearRunSheet={handleClearRunSheet}
             onSelectStopForDelivery={(stop) => {
               setVerifiedOrder(stop);

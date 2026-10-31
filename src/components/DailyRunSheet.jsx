@@ -14,13 +14,23 @@ import {
   QrCode,
   Wallet,
   ChevronRight,
-  Coins
+  Coins,
+  WifiOff,
+  Zap
 } from 'lucide-react';
 import ShiftSettlementDrawer from './ShiftSettlementDrawer';
 
 const money = (n) => '₹' + Number(n || 0).toLocaleString('en-IN');
 
-export default function DailyRunSheet({ completedDeliveries, onClearRunSheet, onSelectStopForDelivery, rider }) {
+export default function DailyRunSheet({
+  completedDeliveries,
+  onClearRunSheet,
+  onSelectStopForDelivery,
+  rider,
+  offlineQueue = [],
+  onSyncQueue,
+  isOnline = true
+}) {
   const [activeTab, setActiveTab] = useState('pending'); // 'pending' | 'completed'
   const [pendingStops, setPendingStops] = useState([]);
   const [loadingStops, setLoadingStops] = useState(false);
@@ -155,6 +165,28 @@ export default function DailyRunSheet({ completedDeliveries, onClearRunSheet, on
         </div>
         <ChevronRight size={18} className="settlementChevron" />
       </button>
+
+      {/* Offline Pending Sync Banner */}
+      {offlineQueue.length > 0 && (
+        <div className="offlineQueueBanner">
+          <div className="queueBannerLeft">
+            <div className="queuePulseIcon">
+              <Zap size={16} color="#fbbf24" />
+            </div>
+            <div>
+              <strong>{offlineQueue.length} Handover{offlineQueue.length > 1 ? 's' : ''} Stored Locally</strong>
+              <small>Recorded in basement/dead zone. Tap to sync with cloud.</small>
+            </div>
+          </div>
+          <button
+            type="button"
+            className="syncQueueBtn"
+            onClick={() => onSyncQueue?.(true)}
+          >
+            <RefreshCw size={12} /> Sync Now
+          </button>
+        </div>
+      )}
 
       {/* Sub Tabs: Pending Stops vs Completed */}
       <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
@@ -455,7 +487,14 @@ export default function DailyRunSheet({ completedDeliveries, onClearRunSheet, on
                         ? `CASH: ${money(it.total)}`
                         : 'PREPAID'}
                     </span>
-                    <span className="runSheetTime">{it.time || 'Delivered'}</span>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '5px' }}>
+                      {it.pendingSync && (
+                        <span className="pendingSyncBadge" title="Saved locally in basement. Queued for auto-sync.">
+                          <WifiOff size={10} /> Queued
+                        </span>
+                      )}
+                      <span className="runSheetTime">{it.time || 'Delivered'}</span>
+                    </div>
                   </div>
                 </div>
               ))}

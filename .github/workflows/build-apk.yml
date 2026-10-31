@@ -61,21 +61,21 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/heads/main')
         with:
-          tag_name: v1.0.7
-          name: "MotoDC Partner Android APK (v1.0.7)"
+          tag_name: v1.0.8
+          name: "MotoDC Partner Android APK (v1.0.8)"
           body: |
-            ## 🚚 MotoDC Partner Delivery App (Android APK v1.0.7)
+            ## 🚚 MotoDC Partner Delivery App (Android APK v1.0.8)
             
             Download and install **MotoDC-Partner.apk** on any Android device.
             
-            ### What's New in v1.0.7:
-            * 💰 **Driver Shift Drawer & Cash Settlement HUD (Enhancement 3)**: Complete end-of-shift cash reconciliation drawer.
-            * 💵 **Interactive Banknote Counter**: Rapid tap calculator for ₹500, ₹200, ₹100, ₹50, ₹20, ₹10 notes to count cash before meeting the depot cashier.
-            * ⚖️ **Live Balance Validator**: Instantly flags match, shortage, or surplus against system COD records.
-            * 🏆 **Shift Earnings Calculator**: Transparent breakdown of delivery incentives (₹45/drop + performance bonus).
-            * 💬 **1-Tap WhatsApp Settlement Slip**: Sends pre-formatted cashier summary directly to the warehouse manager.
-            * 📱 **Doorstep Dynamic UPI QR Code (Enhancement 2)**: Instant scan-and-pay with GPay/PhonePe/Paytm.
-            * 📍 **1-Tap Google Maps Navigation & WhatsApp 5-Min Broadcast (Enhancement 1)**.
+            ### What's New in v1.0.8:
+            * 📶 **Offline-First Handover Sync (Enhancement 4)**: Apartment basements, underground parking, elevators, and cellular dead zones are now 100% supported!
+            * 💾 **Zero-Loss Local Queue**: Deliveries in zero-signal zones are safely saved in local queue (`offlineQueue`) without failing or blocking the driver.
+            * ⚡ **Auto-Flushing Background Sync**: As soon as the driver enters cellular range, pending handovers automatically sync to the cloud.
+            * 🔄 **1-Tap Manual Sync**: Header pill and route queue banner allow instant manual synchronization at any time.
+            * 💰 **Driver Shift Drawer & Cash Settlement HUD (Enhancement 3)**: Banknote counter and live reconciliation.
+            * 📱 **Doorstep Dynamic UPI QR Code (Enhancement 2)**: GPay/PhonePe/Paytm/BHIM QR generator.
+            * 📍 **1-Tap Google Maps Navigation & WhatsApp 5-Min Alert (Enhancement 1)**.
           files: release-output/MotoDC-Partner.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

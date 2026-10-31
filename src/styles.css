@@ -2073,3 +2073,198 @@ body {
   transform: scale(0.98);
 }
 
+/* ==========================================================================
+   Enhancement 4: Offline-First Handover Sync (Basements & Dead Zones)
+   ========================================================================== */
+
+/* Header Status Pill */
+.offlineSyncPill {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 10px;
+  border-radius: 9px;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.2s;
+}
+
+.offlineSyncPill.disconnected {
+  background: rgba(239, 68, 68, 0.16);
+  border-color: rgba(239, 68, 68, 0.35);
+  color: #f87171;
+}
+
+.offlineSyncPill.pending {
+  background: rgba(245, 158, 11, 0.16);
+  border-color: rgba(245, 158, 11, 0.4);
+  color: #fbbf24;
+}
+
+.offlineSyncPill .spinning {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Offline Success Notice in Success Card */
+.offlineSuccessNotice {
+  margin-top: 10px;
+  margin-bottom: 6px;
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px dashed var(--amber);
+  border-radius: 9px;
+  padding: 8px 12px;
+  font-size: 11px;
+  color: #fbbf24;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  text-align: left;
+}
+
+/* Offline Handover Alert in VerifiedOrder */
+.offlineHandoverNotice {
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+}
+
+.offlineHandoverNotice b {
+  display: block;
+  font-size: 12px;
+  font-weight: 800;
+  color: #fbbf24;
+}
+
+.offlineHandoverNotice small {
+  display: block;
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+  line-height: 1.35;
+}
+
+/* Offline QR Placeholder */
+.offlineQrPlaceholder {
+  width: 200px;
+  height: 200px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: #f8fafc;
+  color: #0f172a;
+  text-align: center;
+  border-radius: 6px;
+  padding: 14px;
+}
+
+.offlineQrText {
+  margin-top: 8px;
+}
+
+.offlineQrText b {
+  display: block;
+  font-size: 12px;
+  color: #0f172a;
+}
+
+.offlineQrText small {
+  display: block;
+  font-size: 10px;
+  color: #64748b;
+  margin-top: 2px;
+}
+
+/* Offline Pending Queue Banner in Run Sheet */
+.offlineQueueBanner {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.14) 0%, rgba(16, 22, 34, 0.95) 100%);
+  border: 1.5px solid rgba(245, 158, 11, 0.4);
+  border-radius: 12px;
+  padding: 11px 13px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+.queueBannerLeft {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.queuePulseIcon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: rgba(245, 158, 11, 0.2);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.queueBannerLeft strong {
+  display: block;
+  font-size: 12px;
+  font-weight: 800;
+  color: #fbbf24;
+}
+
+.queueBannerLeft small {
+  display: block;
+  font-size: 10px;
+  color: var(--text-secondary);
+  margin-top: 1px;
+}
+
+.syncQueueBtn {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  border: none;
+  border-radius: 7px;
+  color: #070a10;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 7px 11px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.syncQueueBtn:active {
+  transform: scale(0.96);
+}
+
+/* Pending Sync Badge in Completed Item List */
+.pendingSyncBadge {
+  font-size: 9px;
+  font-weight: 800;
+  color: #fbbf24;
+  background: rgba(245, 158, 11, 0.16);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  padding: 2px 5px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
