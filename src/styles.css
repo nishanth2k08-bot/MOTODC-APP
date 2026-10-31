@@ -13,6 +13,17 @@
   --amber: #f59e0b;
 }
 
+body.lightTheme {
+  --bg-main: #f1f5f9;
+  --bg-card: #ffffff;
+  --bg-card-subtle: #f8fafc;
+  --border: #cbd5e1;
+  --border-light: #e2e8f0;
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #64748b;
+}
+
 * {
   box-sizing: border-box;
   margin: 0;
@@ -28,6 +39,7 @@ body {
   min-height: -webkit-fill-available;
   overflow-x: hidden;
   user-select: none;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 /* App Shell Header */
@@ -35,10 +47,9 @@ body {
   position: sticky;
   top: 0;
   z-index: 100;
-  background: rgba(15, 22, 34, 0.95);
-  backdrop-filter: blur(12px);
+  background: var(--bg-card);
   border-bottom: 1px solid var(--border);
-  padding: 14px 18px;
+  padding: 12px 16px;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -47,55 +58,103 @@ body {
 .brand {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 9px;
 }
 
 .brand b {
-  font-size: 18px;
+  font-size: 17px;
   font-weight: 800;
   letter-spacing: -0.3px;
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .brand b span {
   color: var(--crimson);
 }
 
-.shiftBadge {
-  background: rgba(34, 197, 94, 0.12);
-  color: var(--green);
-  border: 1px solid rgba(34, 197, 94, 0.3);
-  padding: 5px 12px;
-  border-radius: 20px;
-  font-size: 11px;
-  font-weight: 700;
+.headerActions {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
+}
+
+/* Theme Toggle Button */
+.themeToggleBtn {
+  background: var(--bg-card-subtle);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
-.shiftBadge.inactive {
-  background: rgba(239, 68, 68, 0.12);
-  color: #ef4444;
-  border-color: rgba(239, 68, 68, 0.3);
+.themeToggleBtn:hover {
+  border-color: var(--crimson);
+  transform: translateY(-1px);
 }
 
-.shiftDot {
-  width: 7px;
-  height: 7px;
+/* Rider Profile Chip & Logout */
+.riderProfileChip {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: var(--bg-card-subtle);
+  border: 1px solid var(--border);
+  padding: 4px 10px;
+  border-radius: 20px;
+}
+
+.riderAvatarDot {
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
-  background: currentColor;
-  box-shadow: 0 0 8px currentColor;
+  background: var(--green);
+  box-shadow: 0 0 6px var(--green);
+}
+
+.riderInfoText {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.1;
+}
+
+.riderInfoText b {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.riderInfoText small {
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.logoutBtn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 2px 4px;
+  margin-left: 2px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+}
+
+.logoutBtn:hover {
+  color: var(--crimson);
 }
 
 /* Navigation Tabs */
 .appTabs {
   display: flex;
-  background: #0d121c;
+  background: var(--bg-card);
   border-bottom: 1px solid var(--border);
-  padding: 6px 12px 0;
+  padding: 4px 12px 0;
   gap: 8px;
 }
 
@@ -117,7 +176,7 @@ body {
 }
 
 .tabBtn.active {
-  color: #fff;
+  color: var(--text-primary);
   border-bottom-color: var(--crimson);
 }
 
@@ -184,7 +243,7 @@ body {
 .summaryItem strong {
   font-size: 18px;
   font-weight: 800;
-  color: #fff;
+  color: var(--text-primary);
 }
 
 /* Camera Scanner Card */
@@ -193,7 +252,7 @@ body {
   border: 1px solid var(--border);
   border-radius: 16px;
   overflow: hidden;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
 }
 
 .scannerCardHeader {
@@ -210,13 +269,13 @@ body {
   display: flex;
   align-items: center;
   gap: 8px;
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .cameraToggleBtn {
   background: var(--bg-card-subtle);
   border: 1px solid var(--border-light);
-  color: #f1f5f9;
+  color: var(--text-primary);
   padding: 6px 12px;
   border-radius: 8px;
   font-size: 12px;
@@ -273,7 +332,7 @@ body {
   position: relative;
   width: 250px;
   height: 170px;
-  border: 1.5px solid rgba(255, 255, 255, 0.2);
+  border: 1.5px solid rgba(255, 255, 255, 0.25);
   border-radius: 12px;
   overflow: hidden;
 }
@@ -355,7 +414,7 @@ body {
 
 .cameraMessage h3 {
   font-size: 15px;
-  color: #f1f5f9;
+  color: var(--text-primary);
   margin-bottom: 6px;
 }
 
@@ -367,7 +426,7 @@ body {
 /* Manual ID Input Fallback */
 .manualSearchSection {
   padding: 14px 16px;
-  background: #0d121c;
+  background: var(--bg-card-subtle);
   border-top: 1px solid var(--border);
 }
 
@@ -383,7 +442,7 @@ body {
   border-radius: 8px;
   padding: 10px 14px;
   font-size: 13px;
-  color: #fff;
+  color: var(--text-primary);
   outline: none;
   transition: border-color 0.2s;
 }
@@ -422,7 +481,7 @@ body {
   border: 1px solid var(--border);
   border-radius: 16px;
   padding: 18px;
-  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
   animation: popIn 0.25s ease-out;
 }
 
@@ -493,7 +552,7 @@ body {
 .paymentNotice.prepaid {
   background: rgba(34, 197, 94, 0.12);
   border: 1.5px solid var(--green);
-  color: #4ade80;
+  color: #16a34a;
 }
 
 .paymentNotice b {
@@ -507,7 +566,7 @@ body {
 .paymentNotice small {
   display: block;
   font-size: 11px;
-  color: rgba(255, 255, 255, 0.75);
+  color: var(--text-secondary);
   margin-top: 2px;
 }
 
@@ -520,7 +579,7 @@ body {
 
 /* Customer & Address Details */
 .customerSection {
-  background: #0c121b;
+  background: var(--bg-card-subtle);
   border: 1px solid var(--border);
   border-radius: 10px;
   padding: 12px 14px;
@@ -539,7 +598,7 @@ body {
 .customerName {
   font-size: 16px;
   font-weight: 800;
-  color: #fff;
+  color: var(--text-primary);
   margin-bottom: 3px;
 }
 
@@ -563,7 +622,7 @@ body {
   gap: 7px;
   background: var(--bg-card);
   border: 1px solid var(--border-light);
-  color: #fff;
+  color: var(--text-primary);
   padding: 8px 12px;
   border-radius: 8px;
   font-size: 12px;
@@ -574,12 +633,11 @@ body {
 
 .actionBtn:hover {
   border-color: var(--crimson);
-  background: var(--bg-card-subtle);
 }
 
 /* Package Contents */
 .itemsSection {
-  background: #0c121b;
+  background: var(--bg-card-subtle);
   border: 1px solid var(--border);
   border-radius: 10px;
   padding: 12px 14px;
@@ -601,7 +659,7 @@ body {
   align-items: center;
   gap: 12px;
   padding: 8px 0;
-  border-bottom: 1px solid #1a2233;
+  border-bottom: 1px solid var(--border);
 }
 
 .itemRow:last-child {
@@ -612,7 +670,7 @@ body {
   width: 40px;
   height: 40px;
   border-radius: 8px;
-  background: #080c13;
+  background: var(--bg-main);
   border: 1px solid var(--border);
   object-fit: contain;
   flex-shrink: 0;
@@ -621,14 +679,14 @@ body {
 .itemName {
   font-size: 13px;
   font-weight: 600;
-  color: #fff;
+  color: var(--text-primary);
   word-break: break-word;
 }
 
 .itemQty {
-  background: var(--bg-card-subtle);
+  background: var(--bg-card);
   border: 1px solid var(--border-light);
-  color: #cbd5e1;
+  color: var(--text-primary);
   font-size: 12px;
   font-weight: 700;
   padding: 3px 8px;
@@ -638,7 +696,7 @@ body {
 
 /* Doorstep PIN Verification Box */
 .pinBox {
-  background: linear-gradient(135deg, #151b28, #0e141f);
+  background: var(--bg-card-subtle);
   border: 1.5px solid var(--border-light);
   border-radius: 12px;
   padding: 16px;
@@ -649,7 +707,7 @@ body {
 .pinBox h4 {
   font-size: 14px;
   font-weight: 800;
-  color: #fff;
+  color: var(--text-primary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -669,25 +727,6 @@ body {
   gap: 10px;
 }
 
-.pinDigit {
-  width: 48px;
-  height: 54px;
-  background: #070a10;
-  border: 2px solid var(--border-light);
-  border-radius: 10px;
-  font-size: 24px;
-  font-weight: 900;
-  text-align: center;
-  color: #fff;
-  outline: none;
-  transition: all 0.2s;
-}
-
-.pinDigit:focus {
-  border-color: var(--crimson);
-  box-shadow: 0 0 12px rgba(255, 49, 87, 0.4);
-}
-
 /* COD Checkbox confirmation */
 .codCheckboxLabel {
   display: flex;
@@ -701,7 +740,7 @@ body {
   cursor: pointer;
   font-size: 12px;
   font-weight: 600;
-  color: #fde68a;
+  color: #fbbf24;
 }
 
 .codCheckboxLabel input {
@@ -748,7 +787,7 @@ body {
   border-radius: 16px;
   padding: 32px 20px;
   text-align: center;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
   animation: popIn 0.3s ease-out;
 }
 
@@ -767,7 +806,7 @@ body {
 .successCard h2 {
   font-size: 22px;
   font-weight: 900;
-  color: #fff;
+  color: var(--text-primary);
   margin-bottom: 6px;
 }
 
@@ -811,7 +850,7 @@ body {
 .runSheetLeft b {
   font-size: 14px;
   font-weight: 700;
-  color: #fff;
+  color: var(--text-primary);
   display: block;
 }
 
@@ -854,6 +893,167 @@ body {
   font-size: 13px;
 }
 
+/* Login Screen Styles */
+.loginWrapper {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.loginTopBar {
+  padding: 16px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-card);
+}
+
+.loginCard {
+  max-width: 440px;
+  width: 100%;
+  margin: 40px auto;
+  padding: 28px 24px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.25);
+  text-align: center;
+}
+
+.loginIconCircle {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: rgba(255, 49, 87, 0.12);
+  border: 1.5px solid var(--crimson);
+  display: grid;
+  place-items: center;
+  margin: 0 auto 16px;
+}
+
+.loginCard h2 {
+  font-size: 22px;
+  font-weight: 900;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+}
+
+.loginCard p {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 24px;
+}
+
+.loginForm {
+  text-align: left;
+}
+
+.inputGroup {
+  margin-bottom: 16px;
+}
+
+.inputGroup label {
+  display: block;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+
+.inputWrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.inputIcon {
+  position: absolute;
+  left: 14px;
+  color: var(--text-muted);
+}
+
+.inputWrap input {
+  width: 100%;
+  padding: 12px 14px 12px 42px;
+  background: var(--bg-card-subtle);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  font-size: 14px;
+  color: var(--text-primary);
+  outline: none;
+  transition: all 0.2s;
+}
+
+.inputWrap input:focus {
+  border-color: var(--crimson);
+  box-shadow: 0 0 10px rgba(255, 49, 87, 0.2);
+}
+
+.loginSubmitBtn {
+  width: 100%;
+  margin-top: 10px;
+  background: linear-gradient(135deg, var(--crimson), #e6103b);
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  padding: 14px;
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s;
+}
+
+.loginSubmitBtn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 25px rgba(255, 49, 87, 0.4);
+}
+
+.quickRidersSection {
+  margin-top: 24px;
+  padding-top: 18px;
+  border-top: 1px dashed var(--border);
+}
+
+.quickRidersSection small {
+  display: block;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+}
+
+.quickRiderChips {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.quickChip {
+  background: var(--bg-card-subtle);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  padding: 6px 12px;
+  border-radius: 16px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.quickChip:hover {
+  border-color: var(--crimson);
+  color: var(--crimson);
+}
+
 /* Install PWA Prompt Banner */
 .installBanner {
   position: fixed;
@@ -862,11 +1062,11 @@ body {
   right: 12px;
   max-width: 556px;
   margin: 0 auto;
-  background: #151d2d;
+  background: var(--bg-card);
   border: 1.5px solid var(--crimson);
   border-radius: 14px;
   padding: 12px 16px;
-  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.7);
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -904,7 +1104,7 @@ body {
   display: block;
   font-size: 13px;
   font-weight: 800;
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .installText small {

@@ -7,14 +7,16 @@ import {
   Camera,
   ClipboardList,
   CheckCircle2,
-  PackageCheck,
   IndianRupee,
-  ShieldCheck
+  LogOut,
+  Sun,
+  Moon
 } from 'lucide-react';
 import Scanner from './components/Scanner';
 import VerifiedOrder from './components/VerifiedOrder';
 import DailyRunSheet from './components/DailyRunSheet';
 import InstallPrompt from './components/InstallPrompt';
+import Login from './components/Login';
 
 const money = (n) => '₹' + Number(n || 0).toLocaleString('en-IN');
 
@@ -25,6 +27,57 @@ export default function App() {
   const [loadingOrder, setLoadingOrder] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [deliveredSuccess, setDeliveredSuccess] = useState(null);
+
+  // Theme Management (Light / Dark)
+  const [theme, setTheme] = useState(() => {
+    try {
+      return localStorage.getItem('motodc_partner_theme') || 'dark';
+    } catch {
+      return 'dark';
+    }
+  });
+
+  useEffect(() => {
+    if (theme === 'light') {
+      document.body.classList.add('lightTheme');
+    } else {
+      document.body.classList.remove('lightTheme');
+    }
+    try {
+      localStorage.setItem('motodc_partner_theme', theme);
+    } catch (_) {}
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
+  };
+
+  // Rider Authentication State
+  const [rider, setRider] = useState(() => {
+    try {
+      const saved = localStorage.getItem('motodc_partner_rider');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  const handleLogin = (riderProfile) => {
+    setRider(riderProfile);
+    try {
+      localStorage.setItem('motodc_partner_rider', JSON.stringify(riderProfile));
+    } catch (_) {}
+  };
+
+  const handleLogout = () => {
+    if (window.confirm(`Sign out ${rider?.name || 'driver'} from this device?`)) {
+      setRider(null);
+      try {
+        localStorage.removeItem('motodc_partner_rider');
+      } catch (_) {}
+      toast.success('Signed out successfully');
+    }
+  };
 
   // Run sheet persistence
   const [runSheet, setRunSheet] = useState(() => {
@@ -95,10 +148,15 @@ export default function App() {
       const updates = {
         orderStatus: 'delivered',
         deliveredAt: Timestamp.now(),
+        deliveredBy: {
+          riderName: rider?.name || 'MotoDC Partner',
+          riderId: rider?.riderId || 'MDC-R01',
+          timestamp: new Date().toISOString(),
+        },
         history: arrayUnion({
           status: 'delivered',
           timestamp: new Date().toISOString(),
-          note: 'Doorstep barcode & customer PIN verified via MotoDC Partner App',
+          note: `Doorstep verified by ${rider?.name || 'Rider'} (${rider?.riderId || 'MDC-R01'}) via MotoDC Partner App`,
         }),
       };
 
@@ -116,6 +174,7 @@ export default function App() {
         total: order.total || 0,
         isCod,
         itemsCount: (order.items || []).length,
+        deliveredBy: rider?.name || 'Rider',
         time: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
       };
 
@@ -147,6 +206,16 @@ export default function App() {
     return sum + (item.isCod ? Number(item.total || 0) : 0);
   }, 0);
 
+  // If no rider logged in, show Login Screen
+  if (!rider) {
+    return (
+      <div className="appWrapper">
+        <Toaster position="top-center" toastOptions={{ duration: 3000 }} />
+        <Login onLogin={handleLogin} theme={theme} onToggleTheme={toggleTheme} />
+      </div>
+    );
+  }
+
   return (
     <div className="appWrapper">
       <Toaster position="top-center" toastOptions={{ duration: 3000 }} />
@@ -157,15 +226,36 @@ export default function App() {
           <Truck size={22} color="#ff3157" />
           <b>Moto<span>DC</span> Partner</b>
         </div>
-        <button
-          type="button"
-          className={`shiftBadge ${shiftActive ? 'active' : 'inactive'}`}
-          onClick={() => setShiftActive(!shiftActive)}
-          title="Toggle Shift Status"
-        >
-          <span className="shiftDot" />
-          {shiftActive ? 'Shift Active' : 'Shift Off'}
-        </button>
+
+        <div className="headerActions">
+          {/* Day / Night Theme Toggle */}
+          <button
+            type="button"
+            className="themeToggleBtn"
+            onClick={toggleTheme}
+            title={theme === 'dark' ? 'Switch to Daylight Theme' : 'Switch to Dark Theme'}
+            aria-label="Toggle theme"
+          >
+            {theme === 'dark' ? <Sun size={17} color="#fbbf24" /> : <Moon size={17} color="#3b82f6" />}
+          </button>
+
+          {/* Rider Profile & Logout */}
+          <div className="riderProfileChip">
+            <span className="riderAvatarDot" />
+            <div className="riderInfoText">
+              <b>{rider.name}</b>
+              <small>{rider.riderId}</small>
+            </div>
+            <button
+              type="button"
+              className="logoutBtn"
+              onClick={handleLogout}
+              title="End Shift / Sign Out"
+            >
+              <LogOut size={13} />
+            </button>
+          </div>
+        </div>
       </header>
 
       {/* Navigation Tabs */}
@@ -239,7 +329,8 @@ export default function App() {
                 </div>
                 <h2>Doorstep Handover Complete!</h2>
                 <p>
-                  Order <b>#{deliveredSuccess.orderId || deliveredSuccess.id}</b> marked as delivered.
+                  Order <b>#{deliveredSuccess.orderId || deliveredSuccess.id}</b> marked as delivered by{' '}
+                  <b>{rider.name}</b>.
                 </p>
                 <button type="button" className="nextScanBtn" onClick={handleNextScan}>
                   <Camera size={16} /> Scan Next Package
