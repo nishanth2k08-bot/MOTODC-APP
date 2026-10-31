@@ -162,7 +162,7 @@ export default function Login({ onLogin, onEnterChangePassword, theme, onToggleT
                 <Truck size={16} className="inputIcon" />
                 <input
                   type="text"
-                  placeholder="e.g. MDC-R01"
+                  placeholder="e.g. MDC-4829"
                   value={username}
                   onChange={(e) => setUsername(e.target.value.toUpperCase())}
                   autoCapitalize="characters"
@@ -170,7 +170,7 @@ export default function Login({ onLogin, onEnterChangePassword, theme, onToggleT
                   required
                 />
               </div>
-              <small className="fieldHint">Assigned by admin (e.g. MDC-R01, MDC-R02)</small>
+              <small className="fieldHint">Assigned by admin (e.g. MDC-4829, MDC-1094)</small>
             </div>
 
             <div className="inputGroup">
@@ -228,7 +228,7 @@ export default function Login({ onLogin, onEnterChangePassword, theme, onToggleT
                 <Truck size={16} className="inputIcon" />
                 <input
                   type="text"
-                  placeholder="e.g. MDC-R01"
+                  placeholder="e.g. MDC-4829"
                   value={resetUsername}
                   onChange={(e) => setResetUsername(e.target.value.toUpperCase())}
                   autoCapitalize="characters"

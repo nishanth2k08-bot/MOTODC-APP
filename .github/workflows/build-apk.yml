@@ -61,18 +61,18 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/heads/main')
         with:
-          tag_name: v1.0.2
-          name: "MotoDC Partner Android APK (v1.0.2)"
+          tag_name: v1.0.3
+          name: "MotoDC Partner Android APK (v1.0.3)"
           body: |
-            ## 🚚 MotoDC Partner Delivery App (Android APK v1.0.2)
+            ## 🚚 MotoDC Partner Delivery App (Android APK v1.0.3)
             
             Download and install **MotoDC-Partner.apk** on any Android device.
             
-            ### What's New in v1.0.2:
-            * ⚡ **Lightning Fast Barcode Confirmation**: Native C++ BarcodeDetector hardware acceleration + ultra-fast indexed doc/orderId database lookups (<60ms).
-            * 🔒 **Alphanumeric Code & 6-Digit PIN Security**: Removed all demo credentials; riders log in with their unique assigned alphanumeric partner code and 6-digit PIN.
-            * 📲 **Admin-Triggered 6-Digit OTP Reset**: Riders can request a password reset; the Admin generates and sends an automated one-time 6-digit OTP via WhatsApp/SMS.
-            * 🔑 **One-Time OTP & Change Password Page**: Verified OTP immediately unlocks the "Change Password" page to set a unique new 6-digit PIN, then routes back to login.
+            ### What's New in v1.0.3:
+            * 🔢 **MDC-XXXX Alphanumeric Format**: Supports standard "MDC-" followed by random 4 digits (e.g. MDC-4829).
+            * 🗑️ **Rider Lifecycle & Deletion**: Admin can delete former drivers; login access is immediately revoked.
+            * 📲 **Method A 1-Click OTP Dispatch**: Direct 1-tap WhatsApp and native mobile SMS dispatch from Admin.
+            * ⚡ **Hardware Accelerated Barcode Scanner**: Instant barcode detection under 60ms.
           files: release-output/MotoDC-Partner.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
