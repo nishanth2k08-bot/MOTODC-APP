@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <title>MotoDC Partner | Delivery & Handover</title>
+    <meta
+      name="description"
+      content="Official MotoDC Partner delivery app for fast doorstep barcode scanning, COD collection, and customer PIN verification."
+    />
+    <meta name="theme-color" content="#090d14" />
+    <meta name="application-name" content="MotoDC Partner" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="MotoDC Partner" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/icon-192.png" />
+    <link rel="manifest" href="/manifest.json" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker
+            .register('/sw.js')
+            .then((reg) => reg && reg.update())
+            .catch(() => {});
+        });
+      }
+    </script>
+  </body>
+</html>
