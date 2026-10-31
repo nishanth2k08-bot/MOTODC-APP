@@ -1,8 +1,24 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
-import { Camera, RefreshCw, Search, AlertCircle } from 'lucide-react';
+import {
+  Camera,
+  RefreshCw,
+  Search,
+  AlertCircle,
+  Boxes,
+  Trash2,
+  PackageCheck
+} from 'lucide-react';
 
-export default function Scanner({ onOrderScanned, loading }) {
+export default function Scanner({
+  onOrderScanned,
+  loading,
+  isBatchMode = false,
+  onToggleBatchMode,
+  batchOrders = [],
+  onRemoveFromBatch,
+  onProceedBatch
+}) {
   const [cameraActive, setCameraActive] = useState(false);
   const [cameraError, setCameraError] = useState(null);
   const [manualId, setManualId] = useState('');
@@ -39,12 +55,28 @@ export default function Scanner({ onOrderScanned, loading }) {
           }
           lastScanRef.current = { text: decodedText, time: now };
 
-          // Pause video processing while verifying package
-          try {
-            if (scannerRef.current && scannerRef.current.isScanning) {
-              scannerRef.current.pause(true);
-            }
-          } catch (_) {}
+          // If in single mode, pause scanner immediately
+          if (!isBatchMode) {
+            try {
+              if (scannerRef.current && scannerRef.current.isScanning) {
+                scannerRef.current.pause(true);
+              }
+            } catch (_) {}
+          } else {
+            // In batch mode, brief pause to give scan feedback, then auto-resume
+            try {
+              if (scannerRef.current && scannerRef.current.isScanning) {
+                scannerRef.current.pause(true);
+                setTimeout(() => {
+                  try {
+                    if (scannerRef.current && scannerRef.current.isScanning) {
+                      scannerRef.current.resume();
+                    }
+                  } catch (_) {}
+                }, 1000);
+              }
+            } catch (_) {}
+          }
 
           // Silent haptic vibration
           if (navigator.vibrate) {
@@ -98,14 +130,48 @@ export default function Scanner({ onOrderScanned, loading }) {
       navigator.vibrate([60]);
     }
     onOrderScanned(manualId.trim());
+    setManualId('');
   };
+
+  const totalBatchVolume = batchOrders.reduce(
+    (sum, o) => sum + Number(o.total || 0),
+    0
+  );
 
   return (
     <div className="scannerCard">
+      {/* Mode Selector Toggle: Single vs Multi-Parcel Batch */}
+      <div className="scannerModeToggleBar">
+        <button
+          type="button"
+          className={`scanModeBtn ${!isBatchMode ? 'active single' : ''}`}
+          onClick={() => onToggleBatchMode?.(false)}
+        >
+          <Camera size={14} /> Single Parcel
+        </button>
+        <button
+          type="button"
+          className={`scanModeBtn ${isBatchMode ? 'active batch' : ''}`}
+          onClick={() => onToggleBatchMode?.(true)}
+        >
+          <Boxes size={14} /> Multi-Parcel Batch
+          <span className="batchModeTag">Garages</span>
+        </button>
+      </div>
+
       <div className="scannerCardHeader">
         <h2>
-          <Camera size={18} color="#ff3157" />
-          Doorstep Barcode Scanner
+          {isBatchMode ? (
+            <>
+              <Boxes size={18} color="#38bdf8" />
+              Batch Barcode Scanner
+            </>
+          ) : (
+            <>
+              <Camera size={18} color="#ff3157" />
+              Doorstep Barcode Scanner
+            </>
+          )}
         </h2>
         <button
           type="button"
@@ -121,14 +187,16 @@ export default function Scanner({ onOrderScanned, loading }) {
         <div id="reader" />
         {cameraActive && (
           <div className="reticleOverlay">
-            <div className="reticleFrame">
+            <div className={`reticleFrame ${isBatchMode ? 'batchFrame' : ''}`}>
               <span className="reticleCorner tl" />
               <span className="reticleCorner tr" />
               <span className="reticleCorner bl" />
               <span className="reticleCorner br" />
-              <span className="laserScanLine" />
+              <span className={`laserScanLine ${isBatchMode ? 'batchLaser' : ''}`} />
             </div>
-            <div className="reticleHint">ALIGN BARCODE / QR CODE</div>
+            <div className="reticleHint">
+              {isBatchMode ? 'SCAN MULTIPLE BOXES CONSECUTIVELY' : 'ALIGN BARCODE / QR CODE'}
+            </div>
           </div>
         )}
         {!cameraActive && (
@@ -145,16 +213,82 @@ export default function Scanner({ onOrderScanned, loading }) {
           <input
             type="text"
             className="manualSearchInput"
-            placeholder="Scan failed? Enter Order ID (e.g. MDC-08492)"
+            placeholder={
+              isBatchMode
+                ? 'Type Order ID to add to batch...'
+                : 'Scan failed? Enter Order ID (e.g. MDC-08492)'
+            }
             value={manualId}
             onChange={(e) => setManualId(e.target.value)}
           />
           <button type="submit" className="manualSearchBtn" disabled={loading}>
             <Search size={14} />
-            {loading ? 'Verifying...' : 'Verify'}
+            {loading ? 'Adding...' : isBatchMode ? '+ Add to Batch' : 'Verify'}
           </button>
         </form>
       </div>
+
+      {/* Batch Tray Section */}
+      {isBatchMode && (
+        <div className="batchTraySection">
+          <div className="batchTrayHeader">
+            <div className="batchTrayTitle">
+              <Boxes size={15} color="#38bdf8" />
+              <span>Batch Tray ({batchOrders.length} Parcels)</span>
+            </div>
+            {batchOrders.length > 0 && (
+              <span className="batchTrayTotal">
+                ₹{totalBatchVolume.toLocaleString('en-IN')}
+              </span>
+            )}
+          </div>
+
+          {batchOrders.length === 0 ? (
+            <div className="emptyBatchTray">
+              <p>Scan parcel barcodes one after another to fill your batch tray.</p>
+              <small>Ideal for garages & customers receiving 2+ boxes.</small>
+            </div>
+          ) : (
+            <>
+              <div className="batchTrayList">
+                {batchOrders.map((ord, idx) => {
+                  const isCod = String(ord.paymentMethod || '').toLowerCase() === 'cod';
+                  return (
+                    <div className="batchTrayItem" key={idx}>
+                      <div className="trayItemLeft">
+                        <b>#{ord.orderId || ord.id}</b>
+                        <small>
+                          {ord.customer?.name || 'Customer'} •{' '}
+                          <span style={{ color: isCod ? '#fbbf24' : '#22c55e' }}>
+                            {isCod ? `COD: ₹${ord.total}` : 'Prepaid'}
+                          </span>
+                        </small>
+                      </div>
+                      <button
+                        type="button"
+                        className="removeTrayItemBtn"
+                        onClick={() => onRemoveFromBatch?.(ord.orderId || ord.id)}
+                        title="Remove parcel"
+                      >
+                        <Trash2 size={12} />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <button
+                type="button"
+                className="proceedBatchBtn"
+                onClick={onProceedBatch}
+              >
+                <PackageCheck size={16} />
+                Verify & Handover Batch ({batchOrders.length} Parcels) →
+              </button>
+            </>
+          )}
+        </div>
+      )}
     </div>
   );
 }

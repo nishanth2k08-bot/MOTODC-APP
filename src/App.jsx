@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import Scanner from './components/Scanner';
 import VerifiedOrder from './components/VerifiedOrder';
+import BatchVerifiedOrder from './components/BatchVerifiedOrder';
 import DailyRunSheet from './components/DailyRunSheet';
 import InstallPrompt from './components/InstallPrompt';
 import Login from './components/Login';
@@ -31,6 +32,9 @@ export default function App() {
   const [loadingOrder, setLoadingOrder] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [deliveredSuccess, setDeliveredSuccess] = useState(null);
+  const [isBatchMode, setIsBatchMode] = useState(false);
+  const [batchOrders, setBatchOrders] = useState([]);
+  const [isVerifyingBatch, setIsVerifyingBatch] = useState(false);
   const [changePasswordSession, setChangePasswordSession] = useState(null);
 
   // Theme Management (Light / Dark)
@@ -205,8 +209,28 @@ export default function App() {
     if (!clean) return;
 
     setLoadingOrder(true);
-    setVerifiedOrder(null);
+    if (!isBatchMode) {
+      setVerifiedOrder(null);
+    }
     setDeliveredSuccess(null);
+
+    const handleOrderFound = (foundOrder) => {
+      const orderIdDisplay = foundOrder.orderId || foundOrder.id;
+      if (isBatchMode) {
+        const alreadyInBatch = batchOrders.some(
+          (o) => String(o.orderId || o.id) === String(orderIdDisplay)
+        );
+        if (alreadyInBatch) {
+          toast(`Order #${orderIdDisplay} is already in the batch tray!`, { icon: 'ℹ️' });
+        } else {
+          setBatchOrders((prev) => [...prev, foundOrder]);
+          toast.success(`Added #${orderIdDisplay} to Batch Tray (${batchOrders.length + 1} parcels)`);
+        }
+      } else {
+        toast.success(`Found order #${orderIdDisplay}`);
+        setVerifiedOrder(foundOrder);
+      }
+    };
 
     try {
       // 1. High-speed backend API (bypasses Firestore client-rule roadblocks)
@@ -215,8 +239,7 @@ export default function App() {
       const data = await response.json().catch(() => ({}));
 
       if (response.ok && data.order) {
-        toast.success(`Found order #${data.order.orderId || data.order.id}`);
-        setVerifiedOrder(data.order);
+        handleOrderFound(data.order);
         return;
       }
 
@@ -250,8 +273,7 @@ export default function App() {
         if (!match) {
           toast.error(`No order found matching "${clean}". Check barcode label.`);
         } else {
-          toast.success(`Found order #${match.orderId || match.id}`);
-          setVerifiedOrder(match);
+          handleOrderFound(match);
         }
       } catch (directErr) {
         console.error('All lookup paths failed:', directErr);
@@ -376,9 +398,127 @@ export default function App() {
     }
   };
 
+  // Confirm Multi-Parcel Batch Handover (Enhancement 5)
+  const handleConfirmBatchDelivery = async (ordersToDeliver, paymentMode = 'cash') => {
+    setSubmitting(true);
+    try {
+      const isUpi = paymentMode === 'upi_doorstep';
+      const updatedEntries = [];
+      const offlineQueueItems = [];
+
+      for (const order of ordersToDeliver) {
+        const isCodOrder = String(order.paymentMethod || '').toLowerCase() === 'cod';
+        const physicalCashCollected = isCodOrder && !isUpi;
+        const orderIdClean = order.orderId || order.id;
+
+        let savedToCloud = false;
+
+        if (navigator.onLine) {
+          try {
+            const res = await fetch('https://motodc-official.vercel.app/api/delivery-partner', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                docId: order.id,
+                collectionType: order.collectionType,
+                paymentMethod: order.paymentMethod,
+                paymentSettledVia: paymentMode,
+                riderName: rider?.name || 'MotoDC Partner',
+                riderId: rider?.riderId || 'MDC-R01',
+              }),
+            });
+            if (res.ok) savedToCloud = true;
+          } catch (e) {
+            console.warn(`Cloud update failed for #${orderIdClean}, trying direct Firestore:`, e);
+            try {
+              const orderRef = doc(db, 'orders', order.collectionType, 'records', order.id);
+              const updates = {
+                orderStatus: 'delivered',
+                deliveredAt: Timestamp.now(),
+                deliveredBy: {
+                  riderName: rider?.name || 'MotoDC Partner',
+                  riderId: rider?.riderId || 'MDC-R01',
+                  timestamp: new Date().toISOString(),
+                },
+                history: arrayUnion({
+                  status: 'delivered',
+                  timestamp: new Date().toISOString(),
+                  note: `Batch doorstep verified (${ordersToDeliver.length} parcels) by ${rider?.name || 'Rider'} (${rider?.riderId || 'MDC-R01'}) via MotoDC Partner App`,
+                }),
+              };
+              if (isUpi) {
+                updates.paymentStatus = 'paid';
+                updates.paymentMethod = 'upi_doorstep';
+                updates.paidVia = 'Doorstep UPI QR Code';
+              } else if (isCodOrder) {
+                updates.paymentStatus = 'paid';
+              }
+              await updateDoc(orderRef, updates);
+              savedToCloud = true;
+            } catch (fireErr) {
+              console.warn(`Firestore update also failed for #${orderIdClean}:`, fireErr);
+              savedToCloud = false;
+            }
+          }
+        }
+
+        if (!savedToCloud) {
+          offlineQueueItems.push({
+            queueId: `sync_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+            docId: order.id,
+            orderId: orderIdClean,
+            collectionType: order.collectionType,
+            paymentMethod: order.paymentMethod,
+            paymentSettledVia: paymentMode,
+            riderName: rider?.name || 'MotoDC Partner',
+            riderId: rider?.riderId || 'MDC-R01',
+            timestamp: new Date().toISOString(),
+          });
+        }
+
+        updatedEntries.push({
+          id: order.id,
+          orderId: orderIdClean,
+          customerName: order.customer?.name || 'Customer',
+          total: order.total || 0,
+          isCod: physicalCashCollected,
+          paymentMode: isUpi ? 'upi_doorstep' : (isCodOrder ? 'cash' : 'prepaid'),
+          itemsCount: (order.items || []).length,
+          deliveredBy: rider?.name || 'Rider',
+          time: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
+          pendingSync: !savedToCloud,
+        });
+      }
+
+      if (offlineQueueItems.length > 0) {
+        setOfflineQueue((prev) => [...offlineQueueItems, ...prev]);
+        toast(`📶 ${offlineQueueItems.length} parcels saved offline in queue. Will auto-sync!`, { icon: '💾' });
+      } else {
+        toast.success(`⚡ All ${ordersToDeliver.length} parcels delivered & synced to cloud!`);
+      }
+
+      setRunSheet((prev) => [...updatedEntries, ...prev]);
+      setDeliveredSuccess({
+        isBatch: true,
+        batchOrders: ordersToDeliver,
+        count: ordersToDeliver.length,
+        wasSavedOffline: offlineQueueItems.length > 0,
+      });
+      setBatchOrders([]);
+      setIsVerifyingBatch(false);
+    } catch (err) {
+      console.error('Batch delivery critical error:', err);
+      toast.error(`Error confirming batch: ${err.message || 'Please retry'}`);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const handleNextScan = () => {
     setDeliveredSuccess(null);
     setVerifiedOrder(null);
+    setIsVerifyingBatch(false);
+    setBatchOrders([]);
   };
 
   const handleClearRunSheet = () => {
@@ -525,17 +665,46 @@ export default function App() {
             </div>
 
             {/* 1. Camera Scanner View */}
-            {!verifiedOrder && !deliveredSuccess && (
-              <Scanner onOrderScanned={handleOrderScanned} loading={loadingOrder} />
+            {!verifiedOrder && !isVerifyingBatch && !deliveredSuccess && (
+              <Scanner
+                onOrderScanned={handleOrderScanned}
+                loading={loadingOrder}
+                isBatchMode={isBatchMode}
+                onToggleBatchMode={(val) => {
+                  setIsBatchMode(val);
+                  setBatchOrders([]);
+                }}
+                batchOrders={batchOrders}
+                onRemoveFromBatch={(id) =>
+                  setBatchOrders((prev) => prev.filter((o) => (o.orderId || o.id) !== id))
+                }
+                onProceedBatch={() => setIsVerifyingBatch(true)}
+              />
             )}
 
-            {/* 2. Order Verified Screen */}
-            {verifiedOrder && (
+            {/* 2A. Single Order Verified Screen */}
+            {verifiedOrder && !isVerifyingBatch && (
               <VerifiedOrder
                 order={verifiedOrder}
                 isOnline={isOnline}
                 onCancel={() => setVerifiedOrder(null)}
                 onConfirmDelivery={handleConfirmDelivery}
+                submitting={submitting}
+              />
+            )}
+
+            {/* 2B. Multi-Parcel Batch Verified Screen (Enhancement 5) */}
+            {isVerifyingBatch && batchOrders.length > 0 && (
+              <BatchVerifiedOrder
+                orders={batchOrders}
+                isOnline={isOnline}
+                onCancel={() => setIsVerifyingBatch(false)}
+                onRemoveOrder={(id) => {
+                  const rem = batchOrders.filter((o) => (o.orderId || o.id) !== id);
+                  setBatchOrders(rem);
+                  if (rem.length === 0) setIsVerifyingBatch(false);
+                }}
+                onConfirmBatchDelivery={handleConfirmBatchDelivery}
                 submitting={submitting}
               />
             )}
@@ -546,10 +715,21 @@ export default function App() {
                 <div className="successIconWrap">
                   <CheckCircle2 size={42} />
                 </div>
-                <h2>Doorstep Handover Complete!</h2>
+                <h2>
+                  {deliveredSuccess.isBatch ? 'Batch Handover Complete!' : 'Doorstep Handover Complete!'}
+                </h2>
                 <p>
-                  Order <b>#{deliveredSuccess.orderId || deliveredSuccess.id}</b> marked as delivered by{' '}
-                  <b>{rider.name}</b>.
+                  {deliveredSuccess.isBatch ? (
+                    <>
+                      Consignment of <b>{deliveredSuccess.count} parcels</b> successfully handed over by{' '}
+                      <b>{rider.name}</b>.
+                    </>
+                  ) : (
+                    <>
+                      Order <b>#{deliveredSuccess.orderId || deliveredSuccess.id}</b> marked as delivered by{' '}
+                      <b>{rider.name}</b>.
+                    </>
+                  )}
                 </p>
                 {deliveredSuccess.wasSavedOffline && (
                   <div className="offlineSuccessNotice">
