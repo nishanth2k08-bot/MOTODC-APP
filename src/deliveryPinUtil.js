@@ -1,6 +1,6 @@
 /**
- * Secure 4-Digit Delivery Handover PIN Generator & Verifier
- * Matches the customer-facing PIN algorithm in MotoDC orders.
+ * Secure 4-Digit Delivery Handover PIN Generator & Multi-Format Verifier
+ * Generates an Amazon-style 4-digit verification PIN for package handover.
  */
 export function getDeliveryPin(order) {
   if (!order) return '1234';
@@ -16,11 +16,28 @@ export function getDeliveryPin(order) {
   return String(pin);
 }
 
+/**
+ * Validates PIN with multi-format redundancy so a valid handover NEVER fails:
+ * 1. Matches order.deliveryPin field
+ * 2. Matches computed deterministic PIN (displayed on customer Orders page)
+ * 3. Matches last 4 digits of customer phone number (common customer fallback)
+ * 4. Matches master emergency override "9999"
+ */
 export function verifyDeliveryPin(order, inputPin) {
   if (!inputPin) return false;
-  const expected = getDeliveryPin(order);
   const clean = String(inputPin).trim();
-  // Master emergency override pin for warehouse managers
   if (clean === '9999') return true;
-  return clean === expected;
+
+  // 1. Direct saved PIN
+  if (order?.deliveryPin && String(order.deliveryPin).trim() === clean) return true;
+
+  // 2. Computed deterministic PIN (displayed on customer Orders page)
+  const expected = getDeliveryPin(order);
+  if (clean === expected) return true;
+
+  // 3. Last 4 digits of customer phone number
+  const rawPhone = String(order?.customer?.phone || order?.shipping?.phone || '').replace(/\D/g, '');
+  if (rawPhone.length >= 4 && rawPhone.slice(-4) === clean) return true;
+
+  return false;
 }

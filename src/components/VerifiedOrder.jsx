@@ -19,7 +19,7 @@ import { verifyDeliveryPin } from '../deliveryPinUtil';
 
 const money = (n) => '₹' + Number(n || 0).toLocaleString('en-IN');
 
-export default function VerifiedOrder({ order, onCancel, onConfirmDelivery, submitting, isOnline = true }) {
+export default function VerifiedOrder({ order, onCancel, onConfirmDelivery, submitting, isOnline = true, orderSource = 'scanner' }) {
   const [pinInput, setPinInput] = useState('');
   const [paymentChoice, setPaymentChoice] = useState('cash'); // 'cash' | 'upi'
   const [codCollected, setCodCollected] = useState(false);
@@ -103,7 +103,7 @@ export default function VerifiedOrder({ order, onCancel, onConfirmDelivery, subm
         </div>
         <button type="button" className="cancelScanBtn" onClick={onCancel}>
           <RotateCcw size={12} style={{ display: 'inline', marginRight: '4px' }} />
-          Cancel Scan
+          {orderSource === 'runsheet' ? 'Back to Run Sheet' : 'Cancel Scan'}
         </button>
       </div>
 
