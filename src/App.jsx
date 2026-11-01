@@ -271,7 +271,7 @@ export default function App() {
         }
       } catch (directErr) {
         console.error('All lookup paths failed:', directErr);
-        toast.error(`Lookup failed: ${directErr.message || 'Check connection'}`);
+        toast.error(`Order #${clean} could not be verified. Please check connection or verify the barcode.`);
       }
     } finally {
       setLoadingOrder(false);
