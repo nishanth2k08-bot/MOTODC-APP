@@ -67,13 +67,22 @@ export default function DailyRunSheet({
     return sum + (item.paymentMode === 'upi_doorstep' ? Number(item.total || 0) : 0);
   }, 0);
 
-  // 1-Tap Google Maps Turn-by-Turn Navigation
+  // 1-Tap Google Maps Turn-by-Turn Navigation (Optimized for Two-Wheelers / Delivery Bikes)
   const handleOpenGoogleMaps = (shipping) => {
     const addressParts = [shipping?.address, shipping?.city, shipping?.state, shipping?.pincode]
       .filter(Boolean)
       .join(', ');
     const destination = encodeURIComponent(addressParts || 'Karaikal, Puducherry');
-    window.open(`https://www.google.com/maps/dir/?api=1&destination=${destination}`, '_system');
+    const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${destination}&travelmode=two-wheeler`;
+
+    // Native anchor trigger ensures reliable intent dispatch to the Google Maps Android app
+    const a = document.createElement('a');
+    a.href = mapsUrl;
+    a.target = '_system';
+    a.rel = 'noopener noreferrer';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
   };
 
   // 1-Tap WhatsApp "Arriving in 5 Mins" Alert

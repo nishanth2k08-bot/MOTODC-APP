@@ -325,14 +325,14 @@ export default function BatchVerifiedOrder({
             </a>
           )}
           <a
-            href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-              `${shippingAddress} ${shippingCity}`
-            )}`}
-            target="_blank"
-            rel="noreferrer"
+            href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(
+              `${shippingAddress} ${shippingCity}`.trim() || 'Karaikal, Puducherry'
+            )}&travelmode=two-wheeler`}
+            target="_system"
+            rel="noopener noreferrer"
             className="actionBtn"
           >
-            <MapPin size={14} color="#ff3157" /> Open in Maps
+            <MapPin size={14} color="#ff3157" /> Turn-by-Turn Maps
           </a>
         </div>
       </div>

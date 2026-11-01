@@ -281,14 +281,14 @@ export default function VerifiedOrder({ order, onCancel, onConfirmDelivery, subm
             </a>
           )}
           <a
-            href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-              `${order.shipping?.address || ''} ${order.shipping?.city || ''} ${order.shipping?.pincode || ''}`
-            )}`}
-            target="_blank"
-            rel="noreferrer"
+            href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(
+              `${order.shipping?.address || ''} ${order.shipping?.city || ''} ${order.shipping?.pincode || ''}`.trim() || 'Karaikal, Puducherry'
+            )}&travelmode=two-wheeler`}
+            target="_system"
+            rel="noopener noreferrer"
             className="actionBtn"
           >
-            <MapPin size={14} color="#ff3157" /> Open in Maps
+            <MapPin size={14} color="#ff3157" /> Turn-by-Turn Maps
           </a>
         </div>
       </div>
