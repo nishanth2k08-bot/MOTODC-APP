@@ -33,20 +33,35 @@ export default function DailyRunSheet({
 }) {
   const [activeTab, setActiveTab] = useState('pending'); // 'pending' | 'completed'
   const [pendingStops, setPendingStops] = useState([]);
+  const [corridor, setCorridor] = useState(null);
+  const [isStagedAtHub, setIsStagedAtHub] = useState(false);
   const [loadingStops, setLoadingStops] = useState(false);
   const [showSettlement, setShowSettlement] = useState(false);
 
-  // Fetch pending stops from live backend
+  // Fetch pending stops from live backend (scoped by riderId for Solution A)
   const fetchPendingStops = async () => {
     setLoadingStops(true);
     try {
-      const res = await fetch('https://motodc-official.vercel.app/api/delivery-partner?action=active-deliveries');
+      const riderCode = rider?.username || rider?.riderId || '';
+      const url = `https://motodc-official.vercel.app/api/delivery-partner?action=active-deliveries${
+        riderCode ? `&riderId=${encodeURIComponent(riderCode)}` : ''
+      }`;
+      const res = await fetch(url);
       const data = await res.json().catch(() => ({}));
-      if (res.ok && Array.isArray(data.stops)) {
-        // Exclude deliveries already completed in this shift
-        const completedIds = new Set(completedDeliveries.map((c) => String(c.orderId || c.id)));
-        const uncompleted = data.stops.filter((s) => !completedIds.has(String(s.orderId || s.id)));
-        setPendingStops(uncompleted);
+      if (res.ok) {
+        if (data.corridor) {
+          setCorridor(data.corridor);
+        } else {
+          setCorridor(null);
+        }
+        setIsStagedAtHub(Boolean(data.isStagedAtHub));
+
+        if (Array.isArray(data.stops)) {
+          // Exclude deliveries already completed in this shift
+          const completedIds = new Set(completedDeliveries.map((c) => String(c.orderId || c.id)));
+          const uncompleted = data.stops.filter((s) => !completedIds.has(String(s.orderId || s.id)));
+          setPendingStops(uncompleted);
+        }
       }
     } catch (err) {
       console.warn('Error fetching pending stops:', err);
@@ -108,6 +123,31 @@ export default function DailyRunSheet({
 
   return (
     <div className="runSheetSection">
+      {/* Solution A: Assigned Route Corridor Manifest Banner */}
+      {corridor && (
+        <div className="corridorManifestBanner" style={{ '--manifest-color': corridor.color || '#3b82f6' }}>
+          <div className="manifestTopRow">
+            <div className="manifestCodeBadge" style={{ background: corridor.color || '#3b82f6' }}>
+              {corridor.code || 'ROUTE'}
+            </div>
+            <div className="manifestTitleGroup">
+              <h3 className="manifestCorridorName">{corridor.name}</h3>
+              <span className="manifestSubtag">
+                {pendingStops.length} stops left ({completedDeliveries.length} completed)
+              </span>
+            </div>
+            <div className="manifestPayoutBadge">
+              <small>Route Pay</small>
+              <strong>₹{(pendingStops.length + completedDeliveries.length) * 45}</strong>
+            </div>
+          </div>
+          <div className="manifestAreaRow">
+            <MapPin size={12} style={{ color: corridor.color || '#3b82f6', flexShrink: 0 }} />
+            <span>{corridor.areas}</span>
+          </div>
+        </div>
+      )}
+
       {/* Shift Tally HUD */}
       <div className="summaryBar" style={{ marginBottom: '14px' }}>
         <div className="summaryItem">
@@ -267,13 +307,34 @@ export default function DailyRunSheet({
           </div>
 
           {!pendingStops.length ? (
-            <div className="emptyState" style={{ padding: '30px 16px' }}>
-              <CheckCircle2 size={40} color="#22c55e" style={{ margin: '0 auto 8px' }} />
-              <h4 style={{ color: '#fff', margin: '0 0 4px', fontSize: '14px' }}>All Deliveries Complete!</h4>
-              <p style={{ fontSize: '12px', color: '#94a3b8', margin: 0 }}>
-                No pending parcels left in your shift queue. Great work!
-              </p>
-            </div>
+            isStagedAtHub ? (
+              <div className="hubStagingCard">
+                <div className="hubStagingPulse">
+                  <Clock size={36} color="#f59e0b" />
+                </div>
+                <h4>Hub Staging: Waiting for Route Dispatch</h4>
+                <p>
+                  Welcome <strong>{rider?.name}</strong> ({rider?.username})! You are staged at the Karaikal Depot. Your supervisor will assign your corridor manifest based on your <strong>{rider?.serviceMode || 'Standard'}</strong> shift.
+                </p>
+                <button
+                  type="button"
+                  className="refreshStagingBtn"
+                  onClick={fetchPendingStops}
+                  disabled={loadingStops}
+                >
+                  <RefreshCw size={14} className={loadingStops ? 'spin' : ''} />
+                  {loadingStops ? 'Checking Hub Assignments...' : 'Refresh Route Assignment'}
+                </button>
+              </div>
+            ) : (
+              <div className="emptyState" style={{ padding: '30px 16px' }}>
+                <CheckCircle2 size={40} color="#22c55e" style={{ margin: '0 auto 8px' }} />
+                <h4 style={{ color: '#fff', margin: '0 0 4px', fontSize: '14px' }}>All Deliveries Complete!</h4>
+                <p style={{ fontSize: '12px', color: '#94a3b8', margin: 0 }}>
+                  No pending parcels left in your shift queue. Great work!
+                </p>
+              </div>
+            )
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               {pendingStops.map((stop, index) => {

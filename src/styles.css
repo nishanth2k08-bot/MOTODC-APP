@@ -2598,3 +2598,169 @@ body {
   color: #38bdf8;
 }
 
+
+
+/* ===================================================
+   SOLUTION A: ASSIGNED ROUTE CORRIDOR MANIFEST &
+   HUB STAGING STYLES (MOTODC PARTNER APP)
+   =================================================== */
+.corridorManifestBanner {
+  background: #0f172a;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-left: 4px solid var(--manifest-color, #3b82f6);
+  border-radius: 12px;
+  padding: 14px;
+  margin-bottom: 14px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35);
+}
+
+.manifestTopRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.manifestCodeBadge {
+  font-size: 11px;
+  font-weight: 900;
+  color: #fff;
+  padding: 3px 8px;
+  border-radius: 5px;
+  font-family: monospace;
+  letter-spacing: 0.5px;
+}
+
+.manifestTitleGroup {
+  flex: 1;
+  min-width: 0;
+}
+
+.manifestCorridorName {
+  font-size: 14px;
+  font-weight: 800;
+  color: #f8fafc;
+  margin: 0;
+  font-family: 'Sora', sans-serif;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.manifestSubtag {
+  display: block;
+  font-size: 11px;
+  color: #94a3b8;
+  margin-top: 2px;
+}
+
+.manifestPayoutBadge {
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  border-radius: 8px;
+  padding: 5px 9px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.manifestPayoutBadge small {
+  display: block;
+  font-size: 9.5px;
+  color: #6ee7b7;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.manifestPayoutBadge strong {
+  display: block;
+  font-size: 14px;
+  color: #10b981;
+  font-family: 'Sora', sans-serif;
+}
+
+.manifestAreaRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  font-size: 11px;
+  color: #94a3b8;
+  line-height: 1.3;
+}
+
+/* Hub Staging Card */
+.hubStagingCard {
+  background: #0b0f19;
+  border: 1px dashed rgba(245, 158, 11, 0.4);
+  border-radius: 14px;
+  padding: 32px 20px;
+  text-align: center;
+  margin: 10px 0;
+}
+
+.hubStagingPulse {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+  animation: pulseGlow 2s infinite ease-in-out;
+}
+
+@keyframes pulseGlow {
+  0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4); }
+  70% { transform: scale(1.05); box-shadow: 0 0 0 14px rgba(245, 158, 11, 0); }
+  100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+}
+
+.hubStagingCard h4 {
+  font-size: 16px;
+  font-weight: 800;
+  color: #fff;
+  margin: 0 0 8px;
+  font-family: 'Sora', sans-serif;
+}
+
+.hubStagingCard p {
+  font-size: 12.5px;
+  color: #94a3b8;
+  line-height: 1.5;
+  max-width: 340px;
+  margin: 0 auto 20px;
+}
+
+.hubStagingCard strong {
+  color: #fbbf24;
+}
+
+.refreshStagingBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: #000;
+  font-size: 12px;
+  font-weight: 800;
+  padding: 10px 18px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(245, 158, 11, 0.35);
+  transition: all 0.2s ease;
+}
+
+.refreshStagingBtn:hover:not(:disabled) {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+
+.refreshStagingBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

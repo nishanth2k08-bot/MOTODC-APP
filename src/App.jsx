@@ -234,12 +234,20 @@ export default function App() {
 
     try {
       // 1. High-speed backend API (bypasses Firestore client-rule roadblocks)
-      const apiUrl = `https://motodc-official.vercel.app/api/delivery-partner?q=${encodeURIComponent(clean)}`;
+      const riderCode = rider?.username || rider?.riderId || '';
+      const apiUrl = `https://motodc-official.vercel.app/api/delivery-partner?q=${encodeURIComponent(clean)}${
+        riderCode ? `&riderId=${encodeURIComponent(riderCode)}` : ''
+      }`;
       const response = await fetch(apiUrl);
       const data = await response.json().catch(() => ({}));
 
       if (response.ok && data.order) {
         handleOrderFound(data.order);
+        return;
+      }
+
+      if (response.status === 403 && data.code === 'ROUTE_LOCKED') {
+        toast.error(data.error, { duration: 6500 });
         return;
       }
 
@@ -307,7 +315,7 @@ export default function App() {
               paymentMethod: order.paymentMethod,
               paymentSettledVia: paymentMode,
               riderName: rider?.name || 'MotoDC Partner',
-              riderId: rider?.riderId || 'MDC-R01',
+              riderId: rider?.username || rider?.riderId || 'MDC-R01',
             }),
           });
 
@@ -424,7 +432,7 @@ export default function App() {
                 paymentMethod: order.paymentMethod,
                 paymentSettledVia: paymentMode,
                 riderName: rider?.name || 'MotoDC Partner',
-                riderId: rider?.riderId || 'MDC-R01',
+                riderId: rider?.username || rider?.riderId || 'MDC-R01',
               }),
             });
             if (res.ok) savedToCloud = true;
@@ -437,7 +445,7 @@ export default function App() {
                 deliveredAt: Timestamp.now(),
                 deliveredBy: {
                   riderName: rider?.name || 'MotoDC Partner',
-                  riderId: rider?.riderId || 'MDC-R01',
+                  riderId: rider?.username || rider?.riderId || 'MDC-R01',
                   timestamp: new Date().toISOString(),
                 },
                 history: arrayUnion({
