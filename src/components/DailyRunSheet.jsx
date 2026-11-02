@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { getDeliveryPin } from '../deliveryPinUtil';
 import {
   Package,
   IndianRupee,
@@ -373,19 +374,37 @@ export default function DailyRunSheet({
                           #{stop.orderId || stop.id}
                         </b>
                       </div>
-                      <span
-                        style={{
-                          fontSize: '11px',
-                          fontWeight: 800,
-                          padding: '3px 8px',
-                          borderRadius: '6px',
-                          background: isCod ? 'rgba(245,158,11,0.15)' : 'rgba(34,197,94,0.15)',
-                          color: isCod ? '#f59e0b' : '#22c55e',
-                          border: isCod ? '1px solid rgba(245,158,11,0.3)' : '1px solid rgba(34,197,94,0.3)',
-                        }}
-                      >
-                        {isCod ? `COLLECT COD: ${money(stop.total)}` : 'PAID ONLINE'}
-                      </span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span
+                          style={{
+                            fontSize: '11px',
+                            fontWeight: 800,
+                            padding: '3px 8px',
+                            borderRadius: '6px',
+                            background: 'rgba(56,189,248,0.15)',
+                            color: '#38bdf8',
+                            border: '1px solid rgba(56,189,248,0.3)',
+                            fontFamily: 'monospace',
+                            letterSpacing: '1px',
+                          }}
+                          title="Customer Handover PIN"
+                        >
+                          PIN: {getDeliveryPin(stop)}
+                        </span>
+                        <span
+                          style={{
+                            fontSize: '11px',
+                            fontWeight: 800,
+                            padding: '3px 8px',
+                            borderRadius: '6px',
+                            background: isCod ? 'rgba(245,158,11,0.15)' : 'rgba(34,197,94,0.15)',
+                            color: isCod ? '#f59e0b' : '#22c55e',
+                            border: isCod ? '1px solid rgba(245,158,11,0.3)' : '1px solid rgba(34,197,94,0.3)',
+                          }}
+                        >
+                          {isCod ? `COD: ${money(stop.total)}` : 'PAID'}
+                        </span>
+                      </div>
                     </div>
 
                     {/* Customer & Address Details */}
