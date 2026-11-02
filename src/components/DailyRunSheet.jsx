@@ -133,34 +133,62 @@ export default function DailyRunSheet({
 
   // Package Collection & Native Android GPS Permission Request at Hub Station
   const handleDepartHubWithPackages = async () => {
-    toast.loading('Requesting GPS location access...', { id: 'gps-start' });
+    toast.loading('Checking GPS & Location Permissions...', { id: 'gps-start' });
 
+    // Step 1: Check / Request Permissions via Capacitor Native
+    let isPermitted = false;
     try {
-      // 1. Native Android Permission Prompt via Capacitor
       let perm = await Geolocation.checkPermissions().catch(() => null);
-      if (!perm || perm.location !== 'granted') {
-        perm = await Geolocation.requestPermissions({ permissions: ['location'] });
+      if (!perm || (perm.location !== 'granted' && perm.coarseLocation !== 'granted')) {
+        perm = await Geolocation.requestPermissions({ permissions: ['location'] }).catch(() => null);
       }
-
       if (perm && (perm.location === 'granted' || perm.coarseLocation === 'granted')) {
-        const pos = await Geolocation.getCurrentPosition({ enableHighAccuracy: true, timeout: 12000 });
-        setIsRouteActive(true);
-        try {
-          localStorage.setItem('motodc_route_active_' + rider?.username, 'true');
-        } catch (_) {}
-        toast.success('Packages Checked Out! Live Route GPS active for customer updates.', {
-          id: 'gps-start',
-          icon: '🏍️',
-          duration: 5000,
-        });
-        startGpsWatch();
-        return;
+        isPermitted = true;
       }
-    } catch (e) {
-      console.warn('Native Capacitor Geolocation prompt fallback:', e);
+    } catch (permErr) {
+      console.warn('Capacitor permission check:', permErr);
     }
 
-    // 2. Browser Geolocation Fallback
+    // If permission was granted (or user tapped Allow):
+    if (isPermitted) {
+      setIsRouteActive(true);
+      try {
+        localStorage.setItem('motodc_route_active_' + rider?.username, 'true');
+      } catch (_) {}
+
+      toast.success('Packages Checked Out! Route GPS Activated.', {
+        id: 'gps-start',
+        icon: '🏍️',
+        duration: 4000,
+      });
+
+      // Try initial position asynchronously (non-blocking)
+      Geolocation.getCurrentPosition({ enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 })
+        .then((pos) => {
+          if (pos?.coords) {
+            setLastGpsCoords({
+              lat: pos.coords.latitude,
+              lng: pos.coords.longitude,
+              updatedAt: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+            });
+          }
+        })
+        .catch((posErr) => {
+          console.warn('Initial GPS fix warning:', posErr);
+          const msg = String(posErr?.message || '').toLowerCase();
+          if (msg.includes('location services') || msg.includes('disabled') || msg.includes('provider')) {
+            toast('Please pull down your notification bar & turn ON device Location (GPS).', {
+              icon: '📍',
+              duration: 7000,
+            });
+          }
+        });
+
+      startGpsWatch();
+      return;
+    }
+
+    // Step 2: Web Geolocation Fallback
     if (typeof window !== 'undefined' && navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (pos) => {
@@ -171,17 +199,41 @@ export default function DailyRunSheet({
           toast.success('Packages Checked Out! Live Route GPS active.', {
             id: 'gps-start',
             icon: '🏍️',
-            duration: 5000,
+            duration: 4000,
+          });
+          setLastGpsCoords({
+            lat: pos.coords.latitude,
+            lng: pos.coords.longitude,
+            updatedAt: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
           });
           startGpsWatch();
         },
         (err) => {
-          toast.error('Location permission is required to transmit live delivery updates to customers.', { id: 'gps-start' });
+          if (err.code === 1) { // PERMISSION_DENIED
+            toast.error('Location permission was denied. Please allow location in App Settings.', { id: 'gps-start', duration: 5000 });
+          } else {
+            // Position unavailable or timeout (GPS toggle might be off, but permission was given)
+            setIsRouteActive(true);
+            try {
+              localStorage.setItem('motodc_route_active_' + rider?.username, 'true');
+            } catch (_) {}
+            toast.success('Packages Checked Out! Turn ON your phone Location (GPS) toggle.', {
+              id: 'gps-start',
+              icon: '📍',
+              duration: 6000,
+            });
+            startGpsWatch();
+          }
         },
-        { enableHighAccuracy: true, timeout: 10000 }
+        { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 }
       );
     } else {
-      toast.error('GPS is not supported on this device.', { id: 'gps-start' });
+      // Still activate route so driver isn't stuck
+      setIsRouteActive(true);
+      try {
+        localStorage.setItem('motodc_route_active_' + rider?.username, 'true');
+      } catch (_) {}
+      toast('Packages Checked Out. Route active in offline tracking mode.', { id: 'gps-start', icon: '📦' });
     }
   };
 
