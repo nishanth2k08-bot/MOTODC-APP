@@ -61,16 +61,17 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/heads/main')
         with:
-          tag_name: v1.0.11
-          name: "MotoDC Partner Android APK (v1.0.11)"
+          tag_name: v1.0.12
+          name: "MotoDC Partner Android APK (v1.0.12)"
           body: |
-            ## 🚀 MotoDC Partner Delivery App (Android APK v1.0.11)
+            ## 🚀 MotoDC Partner Delivery App (Android APK v1.0.12)
             
             Download and install **MotoDC-Partner.apk** on any Android device.
             
-            ### Fixes & Enhancements in v1.0.11:
-            * 🛡️ **Black Screen on Launch Fixed**: Removed stale Service Worker bundle caching and added React ErrorBoundary with automatic cache flusher.
-            * ⚡ **Non-blocking Startup**: Notification channels and shift alerts initialize smoothly in background without blocking the UI.
+            ### Fixes in v1.0.12:
+            * 🎯 **Fixed TDZ Startup Crash**: Resolved Temporal Dead Zone hoisting bug where `rider` state was evaluated in `useEffect` dependency array before its `useState` declaration.
+            * 🛡️ **Cleaned State in Login Screen**: Added missing state definitions for emergency pass requests.
+            * ⚡ **Instant Smooth Startup**: Guaranteed clean render of the partner login screen on all Android versions.
             * 📦 **Real-Time Assigned Packages Notifications**: Instant native notification and audio chime when packages or corridors are assigned to your run sheet.
             * ⏰ **Shift Check-In Alarms & Notifications**: Daily automated alarms at 8:15 AM (check-in opens) and 8:45 AM (15-min warning before 9:00 AM late cutoff).
             * 🔔 **Live In-App Check-In Banner**: Visual alerts on the login screen highlighting remaining minutes to maintain punctuality bonus.

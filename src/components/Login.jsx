@@ -19,6 +19,12 @@ export default function Login({ onLogin, onEnterChangePassword, theme, onToggleT
   const [otpInput, setOtpInput] = useState('');
   const [resetLoading, setResetLoading] = useState(false);
 
+  // Emergency 1-Time Pass Request States
+  const [requestSent, setRequestSent] = useState(false);
+  const [requestLoading, setRequestLoading] = useState(false);
+  const [requestStatus, setRequestStatus] = useState('');
+  const [checkingStatus, setCheckingStatus] = useState(false);
+
   // Check-In Window Live HUD Status
   const getLoginTimeStatus = () => {
     try {

@@ -58,9 +58,11 @@ export default class ErrorBoundary extends React.Component {
             maxWidth: '90%',
             overflowX: 'auto',
             marginBottom: '24px',
-            textAlign: 'left'
+            textAlign: 'left',
+            whiteSpace: 'pre-wrap',
+            maxHeight: '200px'
           }}>
-            {String(this.state.error?.message || this.state.error || 'Unknown error')}
+            {String(this.state.error?.stack || this.state.error?.message || this.state.error || 'Unknown error')}
           </pre>
           <button
             type="button"

@@ -61,6 +61,16 @@ export default function App() {
     setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
   };
 
+  // Rider Authentication State
+  const [rider, setRider] = useState(() => {
+    try {
+      const saved = localStorage.getItem('motodc_partner_rider');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
+
   // Initialize Android Notification Channels & Shift Check-In Reminders (Non-blocking)
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -77,16 +87,6 @@ export default function App() {
       clearInterval(interval);
     };
   }, [rider]);
-
-  // Rider Authentication State
-  const [rider, setRider] = useState(() => {
-    try {
-      const saved = localStorage.getItem('motodc_partner_rider');
-      return saved ? JSON.parse(saved) : null;
-    } catch {
-      return null;
-    }
-  });
 
   const handleLogin = (riderProfile) => {
     setRider(riderProfile);
