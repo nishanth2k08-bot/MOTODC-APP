@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Truck, Shield, KeyRound, ArrowRight, Sun, Moon, HelpCircle, PhoneCall, CheckCircle2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Truck, Shield, KeyRound, ArrowRight, Sun, Moon, HelpCircle, PhoneCall, CheckCircle2, AlertTriangle, Phone, X, Bell } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
 export default function Login({ onLogin, onEnterChangePassword, theme, onToggleTheme }) {
@@ -8,12 +8,55 @@ export default function Login({ onLogin, onEnterChangePassword, theme, onToggleT
   const [pin, setPin] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // Late Check-in Penalty Modal State
+  const [lateBlockData, setLateBlockData] = useState(null);
+  const [showLateModal, setShowLateModal] = useState(false);
+
   // Forgot Password / OTP Flow State: 'login' | 'request_reset' | 'verify_otp'
   const [mode, setMode] = useState('login');
   const [resetUsername, setResetUsername] = useState('');
   const [maskedPhone, setMaskedPhone] = useState('');
   const [otpInput, setOtpInput] = useState('');
   const [resetLoading, setResetLoading] = useState(false);
+
+  // 10-Minute Pre-Shift Shift Reminder Notification Scheduler
+  useEffect(() => {
+    if (typeof window === 'undefined' || !('Notification' in window)) return;
+
+    if (Notification.permission === 'default') {
+      Notification.requestPermission().catch(() => {});
+    }
+
+    const scheduleReminder = () => {
+      const now = new Date();
+      const utc = now.getTime() + now.getTimezoneOffset() * 60000;
+      const ist = new Date(utc + 330 * 60000);
+
+      // Target: 8:20 AM IST (10 mins before 8:30 AM Standard Shift)
+      const target = new Date(ist);
+      target.setHours(8, 20, 0, 0);
+      if (ist.getTime() >= target.getTime()) {
+        target.setDate(target.getDate() + 1);
+      }
+
+      const diffMs = target.getTime() - ist.getTime();
+      if (diffMs > 0 && diffMs < 86400000) {
+        const timer = setTimeout(() => {
+          if (Notification.permission === 'granted') {
+            try {
+              new Notification('⏰ MotoDC Shift Reminder', {
+                body: 'Your delivery shift starts in 10 minutes (at 8:30 AM)! Check in on time to maintain your punctuality bonus.',
+                icon: '/icon-192.png',
+              });
+            } catch (_) {}
+          }
+        }, diffMs);
+        return () => clearTimeout(timer);
+      }
+    };
+
+    scheduleReminder();
+  }, []);
 
   // 1. Submit Normal Login
   const handleLoginSubmit = async (e) => {
@@ -44,6 +87,11 @@ export default function Login({ onLogin, onEnterChangePassword, theme, onToggleT
 
       const data = await res.json();
       if (!res.ok) {
+        if (data.code === 'LATE_CHECKIN_BLOCKED') {
+          setLateBlockData(data);
+          setShowLateModal(true);
+          return;
+        }
         throw new Error(data.error || 'Login failed');
       }
 
@@ -314,6 +362,89 @@ export default function Login({ onLogin, onEnterChangePassword, theme, onToggleT
               </button>
             </div>
           </form>
+        </div>
+      )}
+
+      {/* LATE CHECK-IN BLOCKED POPUP MODAL */}
+      {showLateModal && lateBlockData && (
+        <div className="lateModalOverlay" onClick={() => setShowLateModal(false)}>
+          <div className="lateModalCard" onClick={(e) => e.stopPropagation()}>
+            <div className="lateModalHeader">
+              <div className="lateModalIconWrap">
+                <AlertTriangle size={30} color="#ef4444" />
+              </div>
+              <button
+                type="button"
+                className="lateModalCloseBtn"
+                onClick={() => setShowLateModal(false)}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <h3 className="lateModalTitle">Late Check-In Blocked</h3>
+            <p className="lateModalSub">
+              On-time check-in is mandatory for Karaikal fleet corridor dispatch.
+            </p>
+
+            <div className="lateModalDetailsBox">
+              <div className="lateDetailRow">
+                <span>Shift Start Time:</span>
+                <strong>{lateBlockData.shiftStartTime || '08:30 AM'}</strong>
+              </div>
+              <div className="lateDetailRow">
+                <span>Check-In Cutoff:</span>
+                <strong style={{ color: '#f59e0b' }}>{lateBlockData.cutoffTime || '09:00 AM'}</strong>
+              </div>
+              <div className="lateDetailRow">
+                <span>Your Attempt Time:</span>
+                <strong style={{ color: '#ef4444' }}>{lateBlockData.istTimeString || 'Late'}</strong>
+              </div>
+            </div>
+
+            {/* Attendance Strike Indicator */}
+            <div className="lateStrikeCard">
+              <div className="strikeHeader">
+                <span>ATTENDANCE STRIKES:</span>
+                <strong className={lateBlockData.bonusCutoff ? 'strikeCritical' : 'strikeWarning'}>
+                  {lateBlockData.lateStrikes || 1} / 3 Strikes
+                </strong>
+              </div>
+              <div className="strikeProgressBar">
+                <div
+                  className="strikeProgressFill"
+                  style={{
+                    width: `${Math.min(100, ((lateBlockData.lateStrikes || 1) / 3) * 100)}%`,
+                    background: lateBlockData.bonusCutoff ? '#ef4444' : '#f59e0b',
+                  }}
+                />
+              </div>
+              <p className="strikePenaltyText">
+                {lateBlockData.bonusCutoff ? (
+                  <span style={{ color: '#ef4444', fontWeight: 800 }}>
+                    ⚠️ 3 Strikes Exceeded: Your monthly punctuality bonus (₹2,500) has been forfeited.
+                  </span>
+                ) : (
+                  <span>
+                    Accumulating 3 late strikes in a month will permanently forfeit your <strong>₹2,500 punctuality bonus</strong>.
+                  </span>
+                )}
+              </p>
+            </div>
+
+            <div className="lateModalActions">
+              <a href="tel:+919842104829" className="hubManagerCallBtn">
+                <Phone size={15} /> Call Hub Manager for Clearance
+              </a>
+              <button
+                type="button"
+                className="dismissLateModalBtn"
+                onClick={() => setShowLateModal(false)}
+              >
+                Understood & Dismiss
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
