@@ -1,3 +1,4 @@
+import { Geolocation } from '@capacitor/geolocation';
 import React, { useState, useEffect } from 'react';
 import { getDeliveryPin } from '../deliveryPinUtil';
 import { toast } from 'react-hot-toast';
@@ -54,48 +55,73 @@ export default function DailyRunSheet({
   const [lastGpsCoords, setLastGpsCoords] = useState(null);
 
   // Start continuous GPS tracking (Triggered ONLY after package collection at Hub)
-  const startGpsWatch = () => {
-    if (typeof window === 'undefined' || !navigator.geolocation) return;
+  const startGpsWatch = async () => {
     let lastSendTime = 0;
 
-    const id = navigator.geolocation.watchPosition(
-      (pos) => {
-        const { latitude, longitude, speed, heading, accuracy } = pos.coords;
-        setLastGpsCoords({
-          lat: latitude,
-          lng: longitude,
-          updatedAt: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-        });
+    const onLocation = (coords) => {
+      const { latitude, longitude, speed, heading, accuracy } = coords;
+      setLastGpsCoords({
+        lat: latitude,
+        lng: longitude,
+        updatedAt: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+      });
 
-        const now = Date.now();
-        if (now - lastSendTime >= 10000) {
-          lastSendTime = now;
-          fetch('https://motodc-official.vercel.app/api/delivery-partner?action=update-rider-location', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              riderId: rider?.username || rider?.riderId || 'MDC-R01',
-              riderName: rider?.name || 'MotoDC Partner',
-              lat: latitude,
-              lng: longitude,
-              speed,
-              heading,
-              accuracy,
-            }),
-          }).catch(() => {});
+      const now = Date.now();
+      if (now - lastSendTime >= 10000) {
+        lastSendTime = now;
+        fetch('https://motodc-official.vercel.app/api/delivery-partner?action=update-rider-location', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            riderId: rider?.username || rider?.riderId || 'MDC-R01',
+            riderName: rider?.name || 'MotoDC Partner',
+            lat: latitude,
+            lng: longitude,
+            speed,
+            heading,
+            accuracy,
+          }),
+        }).catch(() => {});
+      }
+    };
+
+    try {
+      // Use native Capacitor Geolocation watcher if available
+      const watchCallbackId = await Geolocation.watchPosition(
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 5000 },
+        (position, err) => {
+          if (position?.coords) {
+            onLocation(position.coords);
+          }
         }
-      },
-      (err) => console.warn('GPS location tracking error:', err),
-      { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 }
-    );
+      );
+      setGpsWatchId(watchCallbackId);
+      return;
+    } catch (capErr) {
+      console.warn('Capacitor watchPosition fallback:', capErr);
+    }
 
-    setGpsWatchId(id);
+    // Web Fallback
+    if (typeof window !== 'undefined' && navigator.geolocation) {
+      const id = navigator.geolocation.watchPosition(
+        (pos) => onLocation(pos.coords),
+        (err) => console.warn('GPS location tracking error:', err),
+        { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 }
+      );
+      setGpsWatchId(id);
+    }
   };
 
   // Stop GPS tracking (Immediately terminates when returning to Hub or completing shift)
-  const stopGpsWatch = () => {
-    if (gpsWatchId != null && typeof window !== 'undefined' && navigator.geolocation) {
-      navigator.geolocation.clearWatch(gpsWatchId);
+  const stopGpsWatch = async () => {
+    if (gpsWatchId != null) {
+      try {
+        if (typeof gpsWatchId === 'string') {
+          await Geolocation.clearWatch({ id: gpsWatchId });
+        } else if (navigator.geolocation) {
+          navigator.geolocation.clearWatch(gpsWatchId);
+        }
+      } catch (_) {}
       setGpsWatchId(null);
     }
     setIsRouteActive(false);
@@ -105,16 +131,19 @@ export default function DailyRunSheet({
     toast('Live GPS Tracking paused. Returned to Karaikal Hub.', { icon: '🛑' });
   };
 
-  // Package Collection & GPS Activation at Hub Station
-  const handleDepartHubWithPackages = () => {
-    if (typeof window === 'undefined' || !navigator.geolocation) {
-      toast.error('GPS is not supported on this device.');
-      return;
-    }
+  // Package Collection & Native Android GPS Permission Request at Hub Station
+  const handleDepartHubWithPackages = async () => {
+    toast.loading('Requesting GPS location access...', { id: 'gps-start' });
 
-    toast.loading('Acquiring satellite GPS fix...', { id: 'gps-start' });
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
+    try {
+      // 1. Native Android Permission Prompt via Capacitor
+      let perm = await Geolocation.checkPermissions().catch(() => null);
+      if (!perm || perm.location !== 'granted') {
+        perm = await Geolocation.requestPermissions({ permissions: ['location'] });
+      }
+
+      if (perm && (perm.location === 'granted' || perm.coarseLocation === 'granted')) {
+        const pos = await Geolocation.getCurrentPosition({ enableHighAccuracy: true, timeout: 12000 });
         setIsRouteActive(true);
         try {
           localStorage.setItem('motodc_route_active_' + rider?.username, 'true');
@@ -125,12 +154,35 @@ export default function DailyRunSheet({
           duration: 5000,
         });
         startGpsWatch();
-      },
-      (err) => {
-        toast.error('Location permission is required to transmit live delivery updates to customers.', { id: 'gps-start' });
-      },
-      { enableHighAccuracy: true, timeout: 10000 }
-    );
+        return;
+      }
+    } catch (e) {
+      console.warn('Native Capacitor Geolocation prompt fallback:', e);
+    }
+
+    // 2. Browser Geolocation Fallback
+    if (typeof window !== 'undefined' && navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          setIsRouteActive(true);
+          try {
+            localStorage.setItem('motodc_route_active_' + rider?.username, 'true');
+          } catch (_) {}
+          toast.success('Packages Checked Out! Live Route GPS active.', {
+            id: 'gps-start',
+            icon: '🏍️',
+            duration: 5000,
+          });
+          startGpsWatch();
+        },
+        (err) => {
+          toast.error('Location permission is required to transmit live delivery updates to customers.', { id: 'gps-start' });
+        },
+        { enableHighAccuracy: true, timeout: 10000 }
+      );
+    } else {
+      toast.error('GPS is not supported on this device.', { id: 'gps-start' });
+    }
   };
 
   // Resume tracking if route was active and stops remain
