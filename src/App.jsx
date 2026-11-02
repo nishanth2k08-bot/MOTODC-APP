@@ -1,7 +1,7 @@
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { Geolocation } from '@capacitor/geolocation';
 import React, { useState, useEffect } from 'react';
-import { initNotifications, checkAndNotifyLoginTime } from './notificationService';
+import { initNotifications, checkAndNotifyLoginTime, scheduleNativeShiftAlarms, cancelNativeShiftAlarms } from './notificationService';
 import { collection, getDocs, updateDoc, doc, arrayUnion, Timestamp } from 'firebase/firestore';
 import { db } from './firebase';
 import { toast, Toaster } from 'react-hot-toast';
@@ -93,6 +93,7 @@ export default function App() {
     try {
       localStorage.setItem('motodc_partner_rider', JSON.stringify(riderProfile));
     } catch (_) {}
+    cancelNativeShiftAlarms().catch(() => {});
   };
 
   const handleLogout = async () => {
@@ -112,6 +113,7 @@ export default function App() {
         localStorage.removeItem('motodc_partner_rider');
         localStorage.removeItem('motodc_route_active_' + rider?.username);
       } catch (_) {}
+      scheduleNativeShiftAlarms().catch(() => {});
       toast.success('Signed out successfully. One-time pass consumed.');
     }
   };
@@ -132,6 +134,7 @@ export default function App() {
       localStorage.removeItem('motodc_partner_rider');
       localStorage.removeItem('motodc_route_active_' + rider?.username);
     } catch (_) {}
+    scheduleNativeShiftAlarms().catch(() => {});
     toast.error(reason || 'Shift ended. Automatically logged off.', { duration: 8000, icon: '⏰' });
   };
 

@@ -85,6 +85,15 @@ export const initNotifications = async () => {
       } catch (chanErr) {
         console.warn('Channel creation error:', chanErr);
       }
+
+      // Register native OS-level scheduled shift alarms in Android AlarmManager
+      // (Fires even when app is closed / cleared from Recent Apps)
+      try {
+        const isAlreadyLoggedIn = Boolean(localStorage.getItem('motodc_partner_rider'));
+        if (!isAlreadyLoggedIn) {
+          await scheduleNativeShiftAlarms();
+        }
+      } catch (_) {}
     }
 
     // Web Notification API Fallback (for browser/PWA testing)
@@ -95,6 +104,85 @@ export const initNotifications = async () => {
     }
   } catch (err) {
     console.warn('Error during notification initialization:', err);
+  }
+};
+
+/**
+ * Schedules recurring daily shift reminders directly into Android OS AlarmManager.
+ * Runs independently of whether the app is active, closed, or cleared from Recent Apps.
+ */
+export const scheduleNativeShiftAlarms = async () => {
+  try {
+    if (typeof LocalNotifications === 'undefined') return;
+
+    // Verify permission
+    const perm = await LocalNotifications.checkPermissions();
+    if (perm && perm.display !== 'granted') return;
+
+    // Avoid duplicate scheduling if already armed in OS AlarmManager
+    try {
+      const pending = await LocalNotifications.getPending();
+      const ids = new Set((pending?.notifications || []).map((n) => n.id));
+      if (ids.has(9915) && ids.has(9916)) {
+        return;
+      }
+    } catch (_) {}
+
+    await LocalNotifications.schedule({
+      notifications: [
+        {
+          id: 9915,
+          title: '🚨 URGENT: Check-In Cutoff in 15 Mins!',
+          body: 'Morning shift check-in closes at 9:00 AM sharp! Log in now to protect your ₹2,500 monthly bonus.',
+          channelId: 'motodc_shift_alerts',
+          schedule: {
+            on: { hour: 8, minute: 45 },
+            allowWhileIdle: true,
+          },
+          isExactNotification: false,
+        },
+        {
+          id: 9916,
+          title: '⏰ Karaikal Hub Check-In is Open!',
+          body: 'Check-in window is active (8:15 AM – 9:00 AM). Log in now to record on-time attendance.',
+          channelId: 'motodc_shift_alerts',
+          schedule: {
+            on: { hour: 8, minute: 15 },
+            allowWhileIdle: true,
+          },
+          isExactNotification: false,
+        },
+        {
+          id: 9917,
+          title: '⏰ Afternoon Shift Check-In is Open!',
+          body: 'Afternoon check-in window is active (1:15 PM – 2:00 PM). Log in now at Karaikal Hub.',
+          channelId: 'motodc_shift_alerts',
+          schedule: {
+            on: { hour: 13, minute: 15 },
+            allowWhileIdle: true,
+          },
+          isExactNotification: false,
+        },
+      ],
+    });
+    console.log('[MotoDC] Native OS-level shift alarms scheduled successfully.');
+  } catch (err) {
+    console.warn('[MotoDC] Error scheduling native OS shift alarms:', err);
+  }
+};
+
+/**
+ * Cancels native shift alarms while rider is actively logged in on duty.
+ */
+export const cancelNativeShiftAlarms = async () => {
+  try {
+    if (typeof LocalNotifications === 'undefined') return;
+    await LocalNotifications.cancel({
+      notifications: [{ id: 9915 }, { id: 9916 }, { id: 9917 }],
+    });
+    console.log('[MotoDC] Native shift alarms disarmed (rider on shift).');
+  } catch (err) {
+    console.warn('[MotoDC] Error disarming native shift alarms:', err);
   }
 };
 

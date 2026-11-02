@@ -61,22 +61,19 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/heads/main')
         with:
-          tag_name: v1.0.12
-          name: "MotoDC Partner Android APK (v1.0.12)"
+          tag_name: v1.0.13
+          name: "MotoDC Partner Android APK (v1.0.13)"
           body: |
-            ## 🚀 MotoDC Partner Delivery App (Android APK v1.0.12)
+            ## 🚀 MotoDC Partner Delivery App (Android APK v1.0.13)
             
             Download and install **MotoDC-Partner.apk** on any Android device.
             
-            ### Fixes in v1.0.12:
-            * 🎯 **Fixed TDZ Startup Crash**: Resolved Temporal Dead Zone hoisting bug where `rider` state was evaluated in `useEffect` dependency array before its `useState` declaration.
-            * 🛡️ **Cleaned State in Login Screen**: Added missing state definitions for emergency pass requests.
-            * ⚡ **Instant Smooth Startup**: Guaranteed clean render of the partner login screen on all Android versions.
-            * 📦 **Real-Time Assigned Packages Notifications**: Instant native notification and audio chime when packages or corridors are assigned to your run sheet.
-            * ⏰ **Shift Check-In Alarms & Notifications**: Daily automated alarms at 8:15 AM (check-in opens) and 8:45 AM (15-min warning before 9:00 AM late cutoff).
-            * 🔔 **Live In-App Check-In Banner**: Visual alerts on the login screen highlighting remaining minutes to maintain punctuality bonus.
-            * 🔒 **Customer-Only PIN Handover**: 4-digit PIN is strictly visible only to the recipient, fully hidden from the partner app.
-            * 📍 **Battery-Efficient Fused GPS Tracking**: Continuous 10s ping active only on the road during package delivery runs.
+            ### Fixes & Enhancements in v1.0.13:
+            * ⏰ **Native OS-Level Shift Alarms (Works Even If App is Cleared/Closed)**: Registered 8:45 AM (15 mins before cutoff) and 8:15 AM check-in opening alarms directly in Android system `AlarmManager` with `allowWhileIdle` (`RTC_WAKEUP`). Alarms ring reliably even if the app is closed or cleared from Recent Apps!
+            * 🛡️ **Auto Disarm On-Shift**: Automatically silences and cancels shift alarms once the driver logs in, and re-arms them upon sign out.
+            * 📦 **Real-Time Package Notifications**: Native alerts, vibration, and audio chime when packages are assigned to your run sheet.
+            * 🔒 **Customer-Only PIN Security**: 4-digit PIN is strictly visible only to the recipient, fully hidden from the partner app.
+            * ⚡ **Zero-Crash Startup**: Clean hook evaluation and zero TDZ reference errors.
           files: release-output/MotoDC-Partner.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
