@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Truck, Shield, KeyRound, ArrowRight, Sun, Moon, HelpCircle, PhoneCall, CheckCircle2, AlertTriangle, Phone, X, Bell } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { initNotifications, checkAndNotifyLoginTime } from '../notificationService';
 
 export default function Login({ onLogin, onEnterChangePassword, theme, onToggleTheme }) {
   // Login Form State
@@ -19,44 +20,49 @@ export default function Login({ onLogin, onEnterChangePassword, theme, onToggleT
   const [otpInput, setOtpInput] = useState('');
   const [resetLoading, setResetLoading] = useState(false);
 
-  // 10-Minute Pre-Shift Shift Reminder Notification Scheduler
+  // Native Shift Login Notification Monitor
   useEffect(() => {
-    if (typeof window === 'undefined' || !('Notification' in window)) return;
-
-    if (Notification.permission === 'default') {
-      Notification.requestPermission().catch(() => {});
-    }
-
-    const scheduleReminder = () => {
-      const now = new Date();
-      const utc = now.getTime() + now.getTimezoneOffset() * 60000;
-      const ist = new Date(utc + 330 * 60000);
-
-      // Target: 8:20 AM IST (10 mins before 8:30 AM Standard Shift)
-      const target = new Date(ist);
-      target.setHours(8, 20, 0, 0);
-      if (ist.getTime() >= target.getTime()) {
-        target.setDate(target.getDate() + 1);
-      }
-
-      const diffMs = target.getTime() - ist.getTime();
-      if (diffMs > 0 && diffMs < 86400000) {
-        const timer = setTimeout(() => {
-          if (Notification.permission === 'granted') {
-            try {
-              new Notification('⏰ MotoDC Shift Reminder', {
-                body: 'Your delivery shift starts in 10 minutes (at 8:30 AM)! Check in on time to maintain your punctuality bonus.',
-                icon: '/icon-192.png',
-              });
-            } catch (_) {}
-          }
-        }, diffMs);
-        return () => clearTimeout(timer);
-      }
-    };
-
-    scheduleReminder();
+    initNotifications();
+    checkAndNotifyLoginTime(false);
+    const interval = setInterval(() => {
+      checkAndNotifyLoginTime(false);
+    }, 60000);
+    return () => clearInterval(interval);
   }, []);
+
+  const getLoginTimeStatus = () => {
+    const now = new Date();
+    const utc = now.getTime() + now.getTimezoneOffset() * 60000;
+    const ist = new Date(utc + 330 * 60000);
+    const minutes = ist.getHours() * 60 + ist.getMinutes();
+
+    // Morning Window: 8:15 AM (495m) to 9:00 AM (540m)
+    if (minutes >= 495 && minutes < 540) {
+      const isUrgent = minutes >= 525; // 8:45 AM - 9:00 AM
+      return {
+        isOpen: true,
+        isUrgent,
+        label: isUrgent
+          ? `⚠️ URGENT: Check-in closes at 9:00 AM (${540 - minutes}m left)`
+          : '🟢 Karaikal Hub Check-In Active (Closes at 9:00 AM)',
+        sub: isUrgent
+          ? 'Log in now to avoid an unpunctuality strike and bonus deduction!'
+          : 'Log in now to secure your ₹2,500 monthly punctuality bonus.',
+      };
+    }
+    // Afternoon Window: 1:15 PM (795m) to 2:00 PM (840m)
+    if (minutes >= 795 && minutes < 840) {
+      return {
+        isOpen: true,
+        isUrgent: minutes >= 825,
+        label: '🟢 Afternoon Check-In Active (Closes at 2:00 PM)',
+        sub: 'Log in at Karaikal Hub to begin afternoon deliveries.',
+      };
+    }
+    return { isOpen: false };
+  };
+
+  const loginTimeStatus = getLoginTimeStatus();
 
   // 0. Raise Emergency 1-Time Login Request to Hub Manager
   const handleRaiseEmergencyRequest = async () => {
@@ -275,6 +281,30 @@ export default function Login({ onLogin, onEnterChangePassword, theme, onToggleT
           </div>
           <h2>Delivery Partner Login</h2>
           <p>Sign in with your unique alphanumeric code & 6-digit PIN</p>
+
+          {loginTimeStatus.isOpen && (
+            <div style={{
+              margin: '14px 0 16px',
+              padding: '10px 14px',
+              borderRadius: '10px',
+              background: loginTimeStatus.isUrgent ? 'rgba(239, 68, 68, 0.15)' : 'rgba(34, 197, 94, 0.15)',
+              border: `1px solid ${loginTimeStatus.isUrgent ? '#ef4444' : '#22c55e'}`,
+              textAlign: 'left',
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: '10px'
+            }}>
+              <Bell size={18} color={loginTimeStatus.isUrgent ? '#ef4444' : '#22c55e'} style={{ flexShrink: 0, marginTop: '2px' }} />
+              <div>
+                <div style={{ fontWeight: 700, fontSize: '13px', color: loginTimeStatus.isUrgent ? '#ef4444' : '#22c55e' }}>
+                  {loginTimeStatus.label}
+                </div>
+                <div style={{ fontSize: '11px', color: '#cbd5e1', marginTop: '2px' }}>
+                  {loginTimeStatus.sub}
+                </div>
+              </div>
+            </div>
+          )}
 
           <form onSubmit={handleLoginSubmit} className="loginForm">
             <div className="inputGroup">

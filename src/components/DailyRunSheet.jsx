@@ -1,6 +1,7 @@
 import { Geolocation } from '@capacitor/geolocation';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { toast } from 'react-hot-toast';
+import { sendLocalNotification } from '../notificationService';
 import {
   Package,
   IndianRupee,
@@ -40,6 +41,7 @@ export default function DailyRunSheet({
   const [corridor, setCorridor] = useState(null);
   const [isStagedAtHub, setIsStagedAtHub] = useState(false);
   const [loadingStops, setLoadingStops] = useState(false);
+  const prevCountRef = useRef(null);
   const [showSettlement, setShowSettlement] = useState(false);
 
   // Privacy-First Route GPS Tracking State: Active ONLY after collecting packages at Hub
@@ -278,6 +280,34 @@ export default function DailyRunSheet({
           const completedIds = new Set(completedDeliveries.map((c) => String(c.orderId || c.id)));
           const uncompleted = data.stops.filter((s) => !completedIds.has(String(s.orderId || s.id)));
           setPendingStops(uncompleted);
+
+          // Real-Time Notification: Alert the rider when packages are assigned or updated
+          const currentCount = uncompleted.length;
+          if (currentCount > 0) {
+            if (prevCountRef.current !== null && currentCount > prevCountRef.current) {
+              const diff = currentCount - prevCountRef.current;
+              sendLocalNotification({
+                id: Math.floor(1000 + Math.random() * 9000),
+                title: `📦 ${diff} New Package${diff > 1 ? 's' : ''} Assigned!`,
+                body: `You have ${currentCount} total parcel(s) ready for collection at Karaikal Hub${data.corridor?.name ? ` on ${data.corridor.name}` : ''}. Tap to open run sheet.`,
+                channelId: 'motodc_packages_alerts',
+              });
+              toast.success(`📦 ${diff} new package(s) assigned to your run sheet!`, { duration: 6000, icon: '📦' });
+            } else if (prevCountRef.current === null) {
+              const lastAlertKey = 'motodc_last_pkg_alert_' + (rider?.username || 'rider');
+              const lastAlerted = Number(sessionStorage.getItem(lastAlertKey) || 0);
+              if (currentCount !== lastAlerted) {
+                sessionStorage.setItem(lastAlertKey, String(currentCount));
+                sendLocalNotification({
+                  id: Math.floor(1000 + Math.random() * 9000),
+                  title: `📦 Assigned Packages Ready (${currentCount} Parcels)`,
+                  body: `You have ${currentCount} parcel(s) staged for delivery at Karaikal Hub. Collect packages to start your route.`,
+                  channelId: 'motodc_packages_alerts',
+                });
+              }
+            }
+          }
+          prevCountRef.current = currentCount;
         }
       }
     } catch (err) {
@@ -287,9 +317,14 @@ export default function DailyRunSheet({
     }
   };
 
+  // 30-Second Polling for Real-Time Package Assignments from Dispatch Console
   useEffect(() => {
     fetchPendingStops();
-  }, [completedDeliveries]);
+    const pollInterval = setInterval(() => {
+      fetchPendingStops();
+    }, 30000);
+    return () => clearInterval(pollInterval);
+  }, [completedDeliveries, rider?.username]);
 
   const totalCashCollected = completedDeliveries.reduce((sum, item) => {
     return sum + (item.isCod ? Number(item.total || 0) : 0);

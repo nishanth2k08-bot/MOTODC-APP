@@ -1,6 +1,7 @@
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { Geolocation } from '@capacitor/geolocation';
 import React, { useState, useEffect } from 'react';
+import { initNotifications, checkAndNotifyLoginTime } from './notificationService';
 import { collection, getDocs, updateDoc, doc, arrayUnion, Timestamp } from 'firebase/firestore';
 import { db } from './firebase';
 import { toast, Toaster } from 'react-hot-toast';
@@ -59,6 +60,16 @@ export default function App() {
   const toggleTheme = () => {
     setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
   };
+
+  // Initialize Android Notification Channels & Shift Check-In Reminders
+  useEffect(() => {
+    initNotifications();
+    checkAndNotifyLoginTime(Boolean(rider));
+    const interval = setInterval(() => {
+      checkAndNotifyLoginTime(Boolean(rider));
+    }, 60000);
+    return () => clearInterval(interval);
+  }, [rider]);
 
   // Rider Authentication State
   const [rider, setRider] = useState(() => {

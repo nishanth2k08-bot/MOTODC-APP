@@ -61,22 +61,19 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/heads/main')
         with:
-          tag_name: v1.0.9
-          name: "MotoDC Partner Android APK (v1.0.9)"
+          tag_name: v1.0.10
+          name: "MotoDC Partner Android APK (v1.0.10)"
           body: |
-            ## 🚚 MotoDC Partner Delivery App (Android APK v1.0.9)
+            ## 🚀 MotoDC Partner Delivery App (Android APK v1.0.10)
             
             Download and install **MotoDC-Partner.apk** on any Android device.
             
-            ### What's New in v1.0.9:
-            * 📦📦 **1-Scan Multi-Parcel Batch Handover (Enhancement 5)**: Streamlines bulk deliveries to mechanics, workshops, and multi-package customers!
-            * 🛒 **Live Batch Tray & Consecutive Barcode Scan**: Scan multiple parcel boxes in continuous succession with haptic feedback without pausing.
-            * 🔑 **1-Tap Combined PIN Verification**: Single 4-digit customer handover PIN confirms and grounds the entire consignment in one shot.
-            * 💳 **Unified Batch COD & Dynamic UPI QR**: Merges multiple COD balances into a single combined cash/UPI collection.
-            * 📶 **Offline-First Handover Sync (Enhancement 4)**: Apartment basements and zero-signal dead zones with auto-flushing queue.
-            * 💰 **Driver Shift Drawer & Cash Settlement HUD (Enhancement 3)**: Banknote counter and live cash reconciliation.
-            * 📱 **Doorstep Dynamic UPI QR Code (Enhancement 2)**: GPay/PhonePe/Paytm/BHIM QR generator.
-            * 📍 **1-Tap Google Maps Navigation & WhatsApp 5-Min Alert (Enhancement 1)**.
+            ### What's New in v1.0.10:
+            * 📦 **Real-Time Assigned Packages Notifications**: Instant native notification and audio chime when packages or corridors are assigned to your run sheet.
+            * ⏰ **Shift Check-In Alarms & Notifications**: Daily automated alarms at 8:15 AM (check-in opens) and 8:45 AM (15-min warning before 9:00 AM late cutoff).
+            * 🔔 **Live In-App Check-In Banner**: Visual alerts on the login screen highlighting remaining minutes to maintain punctuality bonus.
+            * 🔒 **Customer-Only PIN Handover**: 4-digit PIN is strictly visible only to the recipient, fully hidden from the partner app.
+            * 📍 **Battery-Efficient Fused GPS Tracking**: Continuous 10s ping active only on the road during package delivery runs.
           files: release-output/MotoDC-Partner.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
