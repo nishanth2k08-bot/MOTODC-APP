@@ -34,7 +34,10 @@ export default function DailyRunSheet({
   rider,
   offlineQueue = [],
   onSyncQueue,
-  isOnline = true
+  isOnline = true,
+  hubScannedIds = [],
+  onStartHubBagScan,
+  onPendingStopsLoaded,
 }) {
   const [activeTab, setActiveTab] = useState('pending'); // 'pending' | 'completed'
   const [pendingStops, setPendingStops] = useState([]);
@@ -43,6 +46,17 @@ export default function DailyRunSheet({
   const [loadingStops, setLoadingStops] = useState(false);
   const prevCountRef = useRef(null);
   const [showSettlement, setShowSettlement] = useState(false);
+
+  const hubScannedCount = pendingStops.filter((s) =>
+    hubScannedIds.includes(String(s.orderId || s.id))
+  ).length;
+  const allHubScanned =
+    pendingStops.length > 0 &&
+    pendingStops.every((s) => hubScannedIds.includes(String(s.orderId || s.id)));
+
+  useEffect(() => {
+    onPendingStopsLoaded?.(pendingStops);
+  }, [pendingStops]);
 
   // Privacy-First Route GPS Tracking State: Active ONLY after collecting packages at Hub
   const [isRouteActive, setIsRouteActive] = useState(() => {
@@ -134,6 +148,14 @@ export default function DailyRunSheet({
 
   // Package Collection & Native Android GPS Permission Request at Hub Station
   const handleDepartHubWithPackages = async () => {
+    if (!allHubScanned) {
+      toast.error(
+        `Please scan all ${pendingStops.length} assigned parcels into your delivery bag before departing Karaikal Hub! (${hubScannedCount}/${pendingStops.length} scanned)`,
+        { duration: 6000, icon: '🔒' }
+      );
+      return;
+    }
+
     toast.loading('Checking GPS & Location Permissions...', { id: 'gps-start' });
 
     // Step 1: Check / Request Permissions via Capacitor Native
@@ -489,30 +511,99 @@ export default function DailyRunSheet({
         </div>
       )}
 
-      {/* 📦 Hub Package Collection & Privacy GPS Activation */}
+      {/* 📦 Hub Package Collection & Bag Scanning Gate */}
       {pendingStops.length > 0 && !isRouteActive && (
         <div className="hubPickupCard">
           <div className="hubPickupHeader">
             <div className="hubPickupIcon">📦</div>
             <div>
               <div style={{ fontWeight: 800, fontSize: '14px', color: '#f8fafc' }}>
-                Collect Packages at Karaikal Hub
+                Karaikal Hub Bag Verification Gate
               </div>
               <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px' }}>
-                Load assigned parcels ({pendingStops.length} stops) into delivery bag before departing
+                {allHubScanned
+                  ? `✅ All ${pendingStops.length} parcels verified in delivery bag! Route & GPS unlocked.`
+                  : `Scan all ${pendingStops.length} assigned parcels into your delivery bag before departing`}
               </div>
             </div>
           </div>
-          <p style={{ fontSize: '11px', color: '#64748b', margin: '4px 0 6px 0', lineHeight: 1.4 }}>
-            🔒 <strong>Privacy Guarantee:</strong> GPS is completely inactive at the Hub and off-shift. Location transmission starts only when you confirm package pickup to give customers live order tracking radar.
-          </p>
-          <button
-            type="button"
-            className="startRouteGpsBtn"
-            onClick={handleDepartHubWithPackages}
-          >
-            <Radio size={16} /> Collect Packages & Depart Hub (Start Live Route GPS)
-          </button>
+
+          {/* Bag Scanning Progress Bar */}
+          <div style={{ margin: '12px 0 8px 0' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginBottom: '5px', fontWeight: 700 }}>
+              <span style={{ color: allHubScanned ? '#22c55e' : '#38bdf8' }}>
+                Bag Loading Verification: {hubScannedCount} of {pendingStops.length} Scanned
+              </span>
+              <span style={{ color: allHubScanned ? '#22c55e' : '#f59e0b' }}>
+                {Math.round((hubScannedCount / (pendingStops.length || 1)) * 100)}%
+              </span>
+            </div>
+            <div style={{ width: '100%', height: '8px', background: 'rgba(255,255,255,0.08)', borderRadius: '4px', overflow: 'hidden' }}>
+              <div
+                style={{
+                  width: `${Math.min(100, (hubScannedCount / (pendingStops.length || 1)) * 100)}%`,
+                  height: '100%',
+                  background: allHubScanned ? '#22c55e' : 'linear-gradient(90deg, #0284c7, #38bdf8)',
+                  transition: 'width 0.3s ease',
+                }}
+              />
+            </div>
+          </div>
+
+          {!allHubScanned ? (
+            <>
+              <p style={{ fontSize: '11px', color: '#94a3b8', margin: '6px 0 10px 0', lineHeight: 1.4 }}>
+                🔒 <strong>Strict Dispatch Rule:</strong> Destination addresses, map navigation, and live GPS are locked until every parcel is scanned into custody at the Hub.
+              </p>
+              <button
+                type="button"
+                style={{
+                  width: '100%',
+                  padding: '11px 14px',
+                  borderRadius: '9px',
+                  background: 'linear-gradient(135deg, #0284c7, #0369a1)',
+                  border: 'none',
+                  color: '#fff',
+                  fontSize: '12px',
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px',
+                  boxShadow: '0 4px 14px rgba(2, 132, 199, 0.35)',
+                }}
+                onClick={() => onStartHubBagScan?.()}
+              >
+                <Camera size={15} /> Scan Packages into Delivery Bag ({pendingStops.length - hubScannedCount} remaining)
+              </button>
+            </>
+          ) : (
+            <button
+              type="button"
+              className="startRouteGpsBtn"
+              onClick={handleDepartHubWithPackages}
+              style={{
+                width: '100%',
+                padding: '12px 14px',
+                borderRadius: '10px',
+                background: 'linear-gradient(135deg, #22c55e, #16a34a)',
+                border: 'none',
+                color: '#fff',
+                fontSize: '13px',
+                fontWeight: 800,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                marginTop: '8px',
+                boxShadow: '0 4px 14px rgba(34, 197, 94, 0.35)',
+              }}
+            >
+              <Radio size={16} /> All Scanned! Depart Hub & Start Live Route GPS
+            </button>
+          )}
         </div>
       )}
 
@@ -682,13 +773,26 @@ export default function DailyRunSheet({
                             fontWeight: 800,
                             padding: '3px 8px',
                             borderRadius: '6px',
+                            background: isStopScannedAtHub ? 'rgba(34,197,94,0.15)' : 'rgba(245,158,11,0.15)',
+                            color: isStopScannedAtHub ? '#22c55e' : '#f59e0b',
+                            border: isStopScannedAtHub ? '1px solid rgba(34,197,94,0.35)' : '1px solid rgba(245,158,11,0.35)',
+                          }}
+                        >
+                          {isStopScannedAtHub ? '✅ In Bag' : '⏳ Bag Scan'}
+                        </span>
+                        <span
+                          style={{
+                            fontSize: '11px',
+                            fontWeight: 800,
+                            padding: '3px 8px',
+                            borderRadius: '6px',
                             background: 'rgba(56,189,248,0.12)',
                             color: '#38bdf8',
                             border: '1px solid rgba(56,189,248,0.25)',
                           }}
                           title="Requires Customer Handover PIN"
                         >
-                          🔒 PIN Protected
+                          🔒 PIN
                         </span>
                         <span
                           style={{
@@ -712,8 +816,14 @@ export default function DailyRunSheet({
                         {stop.customer?.name || 'Customer'}
                       </div>
                       <div style={{ color: '#94a3b8', fontSize: '12px', marginTop: '2px', display: 'flex', alignItems: 'flex-start', gap: '4px' }}>
-                        <MapPin size={13} style={{ flexShrink: 0, marginTop: '2px', color: '#ff3157' }} />
-                        <span>{fullAddress || 'Address on file'}</span>
+                        <MapPin size={13} style={{ flexShrink: 0, marginTop: '2px', color: allHubScanned ? '#ff3157' : '#64748b' }} />
+                        {allHubScanned ? (
+                          <span>{fullAddress || 'Address on file'}</span>
+                        ) : (
+                          <span style={{ color: '#64748b', fontStyle: 'italic' }}>
+                            🔒 Destination Hidden • Scan all parcels at Hub to unlock route map
+                          </span>
+                        )}
                       </div>
                       <div style={{ color: '#64748b', fontSize: '11px', marginTop: '4px' }}>
                         📦 {stop.items?.[0]?.name || 'Automotive Parts'} {stop.items?.length > 1 ? `(+${stop.items.length - 1} more)` : ''}
@@ -725,42 +835,56 @@ export default function DailyRunSheet({
                       {/* 1. Google Maps Navigation */}
                       <button
                         type="button"
-                        onClick={() => handleOpenGoogleMaps(stop.shipping)}
+                        onClick={() => {
+                          if (!allHubScanned) {
+                            toast.error('🔒 Destination maps are locked until you scan all parcels into your delivery bag at Karaikal Hub!');
+                            return;
+                          }
+                          handleOpenGoogleMaps(stop.shipping);
+                        }}
                         style={{
                           padding: '8px 4px',
                           borderRadius: '8px',
-                          background: 'rgba(56,189,248,0.12)',
-                          border: '1px solid rgba(56,189,248,0.35)',
-                          color: '#38bdf8',
+                          background: allHubScanned ? 'rgba(56,189,248,0.12)' : 'rgba(255,255,255,0.04)',
+                          border: allHubScanned ? '1px solid rgba(56,189,248,0.35)' : '1px solid rgba(255,255,255,0.08)',
+                          color: allHubScanned ? '#38bdf8' : '#64748b',
                           fontSize: '11px',
                           fontWeight: 700,
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
                           gap: '4px',
-                          cursor: 'pointer',
+                          cursor: allHubScanned ? 'pointer' : 'not-allowed',
+                          opacity: allHubScanned ? 1 : 0.6,
                         }}
                       >
-                        <Navigation size={13} /> Maps
+                        <Navigation size={13} /> {allHubScanned ? 'Maps' : 'Locked'}
                       </button>
 
                       {/* 2. WhatsApp "Arriving in 5 Mins" Alert */}
                       <button
                         type="button"
-                        onClick={() => handleSendWhatsAppAlert(stop)}
+                        onClick={() => {
+                          if (!allHubScanned) {
+                            toast.error('🔒 Scan all packages at Karaikal Hub before alerting customers.');
+                            return;
+                          }
+                          handleSendWhatsAppAlert(stop);
+                        }}
                         style={{
                           padding: '8px 4px',
                           borderRadius: '8px',
-                          background: 'rgba(34,197,94,0.12)',
-                          border: '1px solid rgba(34,197,94,0.35)',
-                          color: '#22c55e',
+                          background: allHubScanned ? 'rgba(34,197,94,0.12)' : 'rgba(255,255,255,0.04)',
+                          border: allHubScanned ? '1px solid rgba(34,197,94,0.35)' : '1px solid rgba(255,255,255,0.08)',
+                          color: allHubScanned ? '#22c55e' : '#64748b',
                           fontSize: '11px',
                           fontWeight: 700,
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
                           gap: '4px',
-                          cursor: 'pointer',
+                          cursor: allHubScanned ? 'pointer' : 'not-allowed',
+                          opacity: allHubScanned ? 1 : 0.6,
                         }}
                       >
                         <MessageCircle size={13} /> 5-Min Alert
@@ -789,17 +913,25 @@ export default function DailyRunSheet({
                       </button>
                     </div>
 
-                    {/* Doorstep Verification Button */}
+                    {/* Doorstep Verification Button (Strict Barcode Verification Rule) */}
                     <button
                       type="button"
-                      onClick={() => onSelectStopForDelivery?.(stop)}
+                      onClick={() => {
+                        if (!allHubScanned) {
+                          toast.error('🔒 Scan all assigned packages at Karaikal Hub before starting doorstep deliveries.');
+                          return;
+                        }
+                        onSelectStopForDelivery?.(stop);
+                      }}
                       style={{
                         width: '100%',
-                        padding: '10px 14px',
+                        padding: '11px 14px',
                         borderRadius: '9px',
-                        background: 'linear-gradient(135deg, #ff3157, #e11d48)',
+                        background: allHubScanned
+                          ? 'linear-gradient(135deg, #ff3157, #e11d48)'
+                          : 'rgba(255,255,255,0.06)',
                         border: 'none',
-                        color: '#ffffff',
+                        color: allHubScanned ? '#ffffff' : '#64748b',
                         fontSize: '12px',
                         fontFamily: 'Sora, sans-serif',
                         fontWeight: 800,
@@ -807,11 +939,11 @@ export default function DailyRunSheet({
                         alignItems: 'center',
                         justifyContent: 'center',
                         gap: '6px',
-                        cursor: 'pointer',
-                        boxShadow: '0 4px 14px rgba(255,49,87,0.35)',
+                        cursor: allHubScanned ? 'pointer' : 'not-allowed',
+                        boxShadow: allHubScanned ? '0 4px 14px rgba(255,49,87,0.35)' : 'none',
                       }}
                     >
-                      <QrCode size={14} /> Doorstep Handover & Verify
+                      <Camera size={14} /> Scan Parcel Barcode for Handover
                     </button>
                   </div>
                 );

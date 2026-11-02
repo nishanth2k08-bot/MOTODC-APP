@@ -2,7 +2,16 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
 import { Camera, RefreshCw, Search, AlertCircle } from 'lucide-react';
 
-export default function Scanner({ onOrderScanned, loading }) {
+export default function Scanner({
+  onOrderScanned,
+  loading,
+  targetDoorstepStop = null,
+  onCancelTarget = null,
+  hubScanMode = false,
+  hubScannedCount = 0,
+  totalPendingStops = 0,
+  onExitHubMode = null,
+}) {
   const [cameraActive, setCameraActive] = useState(false);
   const [cameraError, setCameraError] = useState(null);
   const [manualId, setManualId] = useState('');
@@ -102,7 +111,11 @@ export default function Scanner({ onOrderScanned, loading }) {
       <div className="scannerCardHeader">
         <h2>
           <Camera size={18} color="#ff3157" />
-          Doorstep Barcode Scanner
+          {targetDoorstepStop
+            ? 'Doorstep Handover Verification'
+            : hubScanMode
+            ? 'Hub Bag Loading Verification'
+            : 'Doorstep Barcode Scanner'}
         </h2>
         <button
           type="button"
@@ -113,6 +126,42 @@ export default function Scanner({ onOrderScanned, loading }) {
           {cameraActive ? 'Restart' : 'Start Camera'}
         </button>
       </div>
+
+      {/* Contextual Banner: Doorstep Specific Target Scan */}
+      {targetDoorstepStop && (
+        <div className="scannerContextBanner doorstep">
+          <div className="bannerLeft">
+            <span className="bannerTag">🎯 Doorstep Scan Required</span>
+            <strong>Order #{targetDoorstepStop.orderId || targetDoorstepStop.id}</strong>
+            <small>
+              Customer: {targetDoorstepStop.customer?.name} • Scan package barcode to unlock PIN
+            </small>
+          </div>
+          {onCancelTarget && (
+            <button type="button" className="bannerActionBtn" onClick={onCancelTarget}>
+              ✕ Back to Stops
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Contextual Banner: Hub Bag Loading Verification Scan */}
+      {hubScanMode && (
+        <div className="scannerContextBanner hub">
+          <div className="bannerLeft">
+            <span className="bannerTag">📦 Hub Bag Loading Scan</span>
+            <strong>
+              {hubScannedCount} of {totalPendingStops} Parcels Verified
+            </strong>
+            <small>Scan every assigned parcel into your bag before leaving Karaikal Hub</small>
+          </div>
+          {onExitHubMode && (
+            <button type="button" className="bannerActionBtn hub" onClick={onExitHubMode}>
+              ✓ Run Sheet
+            </button>
+          )}
+        </div>
+      )}
 
       <div className="cameraViewport">
         <div id="reader" />
@@ -142,7 +191,13 @@ export default function Scanner({ onOrderScanned, loading }) {
           <input
             type="text"
             className="manualSearchInput"
-            placeholder="Scan failed? Enter Order ID (e.g. MDC-08492)"
+            placeholder={
+              targetDoorstepStop
+                ? `Scan failed? Enter #${targetDoorstepStop.orderId || targetDoorstepStop.id} to verify`
+                : hubScanMode
+                ? 'Scan failed? Enter Order ID to verify in bag (e.g. MDC-08492)'
+                : 'Scan failed? Enter Order ID (e.g. MDC-08492)'
+            }
             value={manualId}
             onChange={(e) => setManualId(e.target.value)}
           />

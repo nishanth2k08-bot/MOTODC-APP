@@ -1,7 +1,7 @@
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { Geolocation } from '@capacitor/geolocation';
 import React, { useState, useEffect } from 'react';
-import { initNotifications, checkAndNotifyLoginTime, scheduleNativeShiftAlarms, cancelNativeShiftAlarms, sendLocalNotification } from './notificationService';
+import { initNotifications, checkAndNotifyLoginTime, scheduleNativeShiftAlarms, cancelNativeShiftAlarms, sendLocalNotification, playNotificationChime } from './notificationService';
 import { collection, getDocs, updateDoc, doc, arrayUnion, Timestamp } from 'firebase/firestore';
 import { db } from './firebase';
 import { toast, Toaster } from 'react-hot-toast';
@@ -232,6 +232,29 @@ export default function App() {
   const [isOnline, setIsOnline] = useState(() => (typeof navigator !== 'undefined' ? navigator.onLine : true));
   const [isSyncing, setIsSyncing] = useState(false);
 
+  // Doorstep Scan & Hub Bag Verification States
+  const [targetDoorstepStop, setTargetDoorstepStop] = useState(null);
+  const [hubScanMode, setHubScanMode] = useState(false);
+  const [pendingStopsList, setPendingStopsList] = useState([]);
+
+  const todayDateStr = new Date().toISOString().slice(0, 10);
+  const hubStorageKey = `motodc_hub_scanned_${rider?.username || 'rider'}_${todayDateStr}`;
+
+  const [hubScannedIds, setHubScannedIds] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem(hubStorageKey) || '[]');
+    } catch {
+      return [];
+    }
+  });
+
+  const saveHubScannedIds = (ids) => {
+    setHubScannedIds(ids);
+    try {
+      localStorage.setItem(hubStorageKey, JSON.stringify(ids));
+    } catch (_) {}
+  };
+
   // Network listener & auto-sync trigger
   useEffect(() => {
     const handleOnline = () => {
@@ -314,6 +337,70 @@ export default function App() {
     if (!queryText || loadingOrder) return;
     const clean = String(queryText).replace(/^#/, '').trim();
     if (!clean) return;
+
+    // 1. Strict Doorstep Scan Mode: Rider is at customer doorstep verifying specific order
+    if (targetDoorstepStop) {
+      const targetId = String(targetDoorstepStop.orderId || targetDoorstepStop.id || '')
+        .replace(/^#/, '')
+        .trim()
+        .toUpperCase();
+      const scannedId = clean.toUpperCase();
+
+      if (scannedId === targetId || scannedId.includes(targetId) || targetId.includes(scannedId)) {
+        playNotificationChime('package');
+        toast.success(`✅ Parcel Verified for #${targetDoorstepStop.orderId || targetDoorstepStop.id}! Ready for Customer Handover.`, {
+          duration: 4000,
+        });
+        setVerifiedOrder(targetDoorstepStop);
+        setTargetDoorstepStop(null);
+        setOrderSource('runsheet');
+        return;
+      } else {
+        playNotificationChime('shift');
+        toast.error(
+          `❌ WRONG PARCEL! Scanned #${clean}, but this stop requires #${targetDoorstepStop.orderId || targetDoorstepStop.id}. Please scan the correct package!`,
+          { duration: 6000 }
+        );
+        return;
+      }
+    }
+
+    // 2. Hub Bag Loading Scan Mode: Rider is scanning assigned packages into bag before departing Hub
+    if (hubScanMode) {
+      const scannedId = clean.toUpperCase();
+      const matched = pendingStopsList.find((s) => {
+        const id1 = String(s.orderId || '')
+          .replace(/^#/, '')
+          .trim()
+          .toUpperCase();
+        const id2 = String(s.id || '')
+          .replace(/^#/, '')
+          .trim()
+          .toUpperCase();
+        return id1 === scannedId || id2 === scannedId || id1.includes(scannedId) || scannedId.includes(id1);
+      });
+
+      if (matched) {
+        const matchedKey = String(matched.orderId || matched.id);
+        const updated = Array.from(new Set([...hubScannedIds, matchedKey]));
+        saveHubScannedIds(updated);
+        playNotificationChime('package');
+        toast.success(`📦 Verified in Bag: #${matched.orderId || matched.id} (${updated.length}/${pendingStopsList.length})`, {
+          icon: '✅',
+        });
+
+        if (updated.length >= pendingStopsList.length && pendingStopsList.length > 0) {
+          toast.success('🎉 All assigned parcels verified in delivery bag! Route & GPS unlocked.', {
+            icon: '🚀',
+            duration: 6000,
+          });
+        }
+      } else {
+        playNotificationChime('shift');
+        toast.error(`⚠️ Parcel #${clean} is not in your assigned stops today!`, { duration: 5000 });
+      }
+      return;
+    }
 
     setLoadingOrder(true);
     if (!isBatchMode) {
@@ -608,7 +695,11 @@ export default function App() {
         <button
           type="button"
           className={`tabBtn ${activeTab === 'scanner' ? 'active' : ''}`}
-          onClick={() => setActiveTab("scanner")}
+          onClick={() => {
+            setTargetDoorstepStop(null);
+            setHubScanMode(false);
+            setActiveTab('scanner');
+          }}
         >
           <Camera size={16} /> Scanner
         </button>
@@ -652,6 +743,20 @@ export default function App() {
               <Scanner
                 onOrderScanned={handleOrderScanned}
                 loading={loadingOrder}
+                targetDoorstepStop={targetDoorstepStop}
+                onCancelTarget={() => {
+                  setTargetDoorstepStop(null);
+                  setActiveTab('runsheet');
+                }}
+                hubScanMode={hubScanMode}
+                hubScannedCount={
+                  pendingStopsList.filter((s) => hubScannedIds.includes(String(s.orderId || s.id))).length
+                }
+                totalPendingStops={pendingStopsList.length}
+                onExitHubMode={() => {
+                  setHubScanMode(false);
+                  setActiveTab('runsheet');
+                }}
               />
             )}
 
@@ -752,9 +857,18 @@ export default function App() {
             onSyncQueue={flushOfflineQueue}
             isOnline={isOnline}
             onClearRunSheet={handleClearRunSheet}
+            hubScannedIds={hubScannedIds}
+            onPendingStopsLoaded={(stops) => setPendingStopsList(stops)}
+            onStartHubBagScan={() => {
+              setHubScanMode(true);
+              setTargetDoorstepStop(null);
+              setVerifiedOrder(null);
+              setActiveTab('scanner');
+            }}
             onSelectStopForDelivery={(stop) => {
-              setVerifiedOrder(stop);
-              setOrderSource('runsheet');
+              setTargetDoorstepStop(stop);
+              setHubScanMode(false);
+              setVerifiedOrder(null);
               setActiveTab('scanner');
             }}
           />
