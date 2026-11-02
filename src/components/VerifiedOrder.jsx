@@ -15,7 +15,7 @@ import {
   Sparkles,
   WifiOff
 } from 'lucide-react';
-import { verifyDeliveryPin, getDeliveryPin } from '../deliveryPinUtil';
+import { verifyDeliveryPin } from '../deliveryPinUtil';
 
 const money = (n) => '₹' + Number(n || 0).toLocaleString('en-IN');
 
@@ -33,7 +33,6 @@ export default function VerifiedOrder({ order, onCancel, onConfirmDelivery, subm
   const upiId = 'motodc@upi';
   const orderAmount = Number(order.total || 0);
 
-  const expectedPin = getDeliveryPin(order);
   const rawPhone = String(order?.customer?.phone || order?.shipping?.phone || '').replace(/\D/g, '');
   const phoneLast4 = rawPhone.length >= 4 ? rawPhone.slice(-4) : '';
   const rawOrderId = String(order?.orderId || order?.id || '').replace(/\D/g, '');
@@ -353,36 +352,11 @@ export default function VerifiedOrder({ order, onCancel, onConfirmDelivery, subm
             />
           </div>
 
-          {/* Quick PIN Helper & Auto-Fill */}
-          <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(30, 41, 59, 0.7)', border: '1px solid rgba(56, 189, 248, 0.3)', padding: '5px 12px', borderRadius: '8px' }}>
-              <span style={{ fontSize: '11px', color: '#94a3b8' }}>Customer PIN:</span>
-              <strong style={{ fontSize: '15px', color: '#38bdf8', letterSpacing: '2px', fontFamily: 'monospace' }}>
-                {expectedPin}
-              </strong>
-              <button
-                type="button"
-                onClick={() => {
-                  setPinInput(expectedPin);
-                  setErrorMsg('');
-                }}
-                style={{
-                  background: '#2563eb',
-                  color: '#ffffff',
-                  border: 'none',
-                  borderRadius: '6px',
-                  padding: '3px 9px',
-                  fontSize: '11px',
-                  fontWeight: 700,
-                  cursor: 'pointer'
-                }}
-              >
-                Auto-Fill
-              </button>
-            </div>
-            <div style={{ fontSize: '11px', color: '#64748b', textAlign: 'center' }}>
-              Accepted: PIN ({expectedPin}), Phone ({phoneLast4 || 'N/A'}), Order #{orderLast4 || 'N/A'}, or Override 9999
-            </div>
+          {/* Secure Handover Instruction (PIN is hidden from delivery rider) */}
+          <div style={{ marginTop: '14px', textAlign: 'center' }}>
+            <span style={{ fontSize: '12px', color: '#94a3b8', lineHeight: 1.5 }}>
+              🔒 <strong>Customer Security Handover:</strong> Ask the customer for the 4-digit PIN displayed on their MotoDC Orders screen.
+            </span>
           </div>
         </div>
 

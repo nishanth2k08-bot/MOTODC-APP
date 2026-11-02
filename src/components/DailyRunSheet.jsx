@@ -1,6 +1,5 @@
 import { Geolocation } from '@capacitor/geolocation';
 import React, { useState, useEffect } from 'react';
-import { getDeliveryPin } from '../deliveryPinUtil';
 import { toast } from 'react-hot-toast';
 import {
   Package,
@@ -648,15 +647,13 @@ export default function DailyRunSheet({
                             fontWeight: 800,
                             padding: '3px 8px',
                             borderRadius: '6px',
-                            background: 'rgba(56,189,248,0.15)',
+                            background: 'rgba(56,189,248,0.12)',
                             color: '#38bdf8',
-                            border: '1px solid rgba(56,189,248,0.3)',
-                            fontFamily: 'monospace',
-                            letterSpacing: '1px',
+                            border: '1px solid rgba(56,189,248,0.25)',
                           }}
-                          title="Customer Handover PIN"
+                          title="Requires Customer Handover PIN"
                         >
-                          PIN: {getDeliveryPin(stop)}
+                          🔒 PIN Protected
                         </span>
                         <span
                           style={{
