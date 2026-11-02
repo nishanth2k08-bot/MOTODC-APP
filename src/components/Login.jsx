@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Truck, Shield, KeyRound, ArrowRight, Sun, Moon, HelpCircle, PhoneCall, CheckCircle2, AlertTriangle, Phone, X, Bell } from 'lucide-react';
 import { toast } from 'react-hot-toast';
-import { initNotifications, checkAndNotifyLoginTime } from '../notificationService';
 
 export default function Login({ onLogin, onEnterChangePassword, theme, onToggleTheme }) {
   // Login Form State
@@ -20,46 +19,41 @@ export default function Login({ onLogin, onEnterChangePassword, theme, onToggleT
   const [otpInput, setOtpInput] = useState('');
   const [resetLoading, setResetLoading] = useState(false);
 
-  // Native Shift Login Notification Monitor
-  useEffect(() => {
-    initNotifications();
-    checkAndNotifyLoginTime(false);
-    const interval = setInterval(() => {
-      checkAndNotifyLoginTime(false);
-    }, 60000);
-    return () => clearInterval(interval);
-  }, []);
-
+  // Check-In Window Live HUD Status
   const getLoginTimeStatus = () => {
-    const now = new Date();
-    const utc = now.getTime() + now.getTimezoneOffset() * 60000;
-    const ist = new Date(utc + 330 * 60000);
-    const minutes = ist.getHours() * 60 + ist.getMinutes();
+    try {
+      const now = new Date();
+      const utc = now.getTime() + now.getTimezoneOffset() * 60000;
+      const ist = new Date(utc + 330 * 60000);
+      const minutes = ist.getHours() * 60 + ist.getMinutes();
 
-    // Morning Window: 8:15 AM (495m) to 9:00 AM (540m)
-    if (minutes >= 495 && minutes < 540) {
-      const isUrgent = minutes >= 525; // 8:45 AM - 9:00 AM
-      return {
-        isOpen: true,
-        isUrgent,
-        label: isUrgent
-          ? `⚠️ URGENT: Check-in closes at 9:00 AM (${540 - minutes}m left)`
-          : '🟢 Karaikal Hub Check-In Active (Closes at 9:00 AM)',
-        sub: isUrgent
-          ? 'Log in now to avoid an unpunctuality strike and bonus deduction!'
-          : 'Log in now to secure your ₹2,500 monthly punctuality bonus.',
-      };
+      // Morning Window: 8:15 AM (495m) to 9:00 AM (540m)
+      if (minutes >= 495 && minutes < 540) {
+        const isUrgent = minutes >= 525; // 8:45 AM - 9:00 AM
+        return {
+          isOpen: true,
+          isUrgent,
+          label: isUrgent
+            ? `⚠️ URGENT: Check-in closes at 9:00 AM (${540 - minutes}m left)`
+            : '🟢 Karaikal Hub Check-In Active (Closes at 9:00 AM)',
+          sub: isUrgent
+            ? 'Log in now to avoid an unpunctuality strike and bonus deduction!'
+            : 'Log in now to secure your ₹2,500 monthly punctuality bonus.',
+        };
+      }
+      // Afternoon Window: 1:15 PM (795m) to 2:00 PM (840m)
+      if (minutes >= 795 && minutes < 840) {
+        return {
+          isOpen: true,
+          isUrgent: minutes >= 825,
+          label: '🟢 Afternoon Check-In Active (Closes at 2:00 PM)',
+          sub: 'Log in at Karaikal Hub to begin afternoon deliveries.',
+        };
+      }
+      return { isOpen: false };
+    } catch {
+      return { isOpen: false };
     }
-    // Afternoon Window: 1:15 PM (795m) to 2:00 PM (840m)
-    if (minutes >= 795 && minutes < 840) {
-      return {
-        isOpen: true,
-        isUrgent: minutes >= 825,
-        label: '🟢 Afternoon Check-In Active (Closes at 2:00 PM)',
-        sub: 'Log in at Karaikal Hub to begin afternoon deliveries.',
-      };
-    }
-    return { isOpen: false };
   };
 
   const loginTimeStatus = getLoginTimeStatus();

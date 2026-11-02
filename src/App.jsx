@@ -61,14 +61,21 @@ export default function App() {
     setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
   };
 
-  // Initialize Android Notification Channels & Shift Check-In Reminders
+  // Initialize Android Notification Channels & Shift Check-In Reminders (Non-blocking)
   useEffect(() => {
-    initNotifications();
-    checkAndNotifyLoginTime(Boolean(rider));
+    const timer = setTimeout(() => {
+      initNotifications().catch(() => {});
+      checkAndNotifyLoginTime(Boolean(rider));
+    }, 1000);
+
     const interval = setInterval(() => {
       checkAndNotifyLoginTime(Boolean(rider));
     }, 60000);
-    return () => clearInterval(interval);
+
+    return () => {
+      clearTimeout(timer);
+      clearInterval(interval);
+    };
   }, [rider]);
 
   // Rider Authentication State
