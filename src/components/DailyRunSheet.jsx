@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getDeliveryPin } from '../deliveryPinUtil';
+import { toast } from 'react-hot-toast';
 import {
   Package,
   IndianRupee,
@@ -17,7 +18,9 @@ import {
   ChevronRight,
   Coins,
   WifiOff,
-  Zap
+  Zap,
+  Radio,
+  ShieldCheck
 } from 'lucide-react';
 import ShiftSettlementDrawer from './ShiftSettlementDrawer';
 
@@ -38,6 +41,116 @@ export default function DailyRunSheet({
   const [isStagedAtHub, setIsStagedAtHub] = useState(false);
   const [loadingStops, setLoadingStops] = useState(false);
   const [showSettlement, setShowSettlement] = useState(false);
+
+  // Privacy-First Route GPS Tracking State: Active ONLY after collecting packages at Hub
+  const [isRouteActive, setIsRouteActive] = useState(() => {
+    try {
+      return localStorage.getItem('motodc_route_active_' + rider?.username) === 'true';
+    } catch {
+      return false;
+    }
+  });
+  const [gpsWatchId, setGpsWatchId] = useState(null);
+  const [lastGpsCoords, setLastGpsCoords] = useState(null);
+
+  // Start continuous GPS tracking (Triggered ONLY after package collection at Hub)
+  const startGpsWatch = () => {
+    if (typeof window === 'undefined' || !navigator.geolocation) return;
+    let lastSendTime = 0;
+
+    const id = navigator.geolocation.watchPosition(
+      (pos) => {
+        const { latitude, longitude, speed, heading, accuracy } = pos.coords;
+        setLastGpsCoords({
+          lat: latitude,
+          lng: longitude,
+          updatedAt: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+        });
+
+        const now = Date.now();
+        if (now - lastSendTime >= 10000) {
+          lastSendTime = now;
+          fetch('https://motodc-official.vercel.app/api/delivery-partner?action=update-rider-location', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              riderId: rider?.username || rider?.riderId || 'MDC-R01',
+              riderName: rider?.name || 'MotoDC Partner',
+              lat: latitude,
+              lng: longitude,
+              speed,
+              heading,
+              accuracy,
+            }),
+          }).catch(() => {});
+        }
+      },
+      (err) => console.warn('GPS location tracking error:', err),
+      { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 }
+    );
+
+    setGpsWatchId(id);
+  };
+
+  // Stop GPS tracking (Immediately terminates when returning to Hub or completing shift)
+  const stopGpsWatch = () => {
+    if (gpsWatchId != null && typeof window !== 'undefined' && navigator.geolocation) {
+      navigator.geolocation.clearWatch(gpsWatchId);
+      setGpsWatchId(null);
+    }
+    setIsRouteActive(false);
+    try {
+      localStorage.removeItem('motodc_route_active_' + rider?.username);
+    } catch (_) {}
+    toast('Live GPS Tracking paused. Returned to Karaikal Hub.', { icon: '🛑' });
+  };
+
+  // Package Collection & GPS Activation at Hub Station
+  const handleDepartHubWithPackages = () => {
+    if (typeof window === 'undefined' || !navigator.geolocation) {
+      toast.error('GPS is not supported on this device.');
+      return;
+    }
+
+    toast.loading('Acquiring satellite GPS fix...', { id: 'gps-start' });
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setIsRouteActive(true);
+        try {
+          localStorage.setItem('motodc_route_active_' + rider?.username, 'true');
+        } catch (_) {}
+        toast.success('Packages Checked Out! Live Route GPS active for customer updates.', {
+          id: 'gps-start',
+          icon: '🏍️',
+          duration: 5000,
+        });
+        startGpsWatch();
+      },
+      (err) => {
+        toast.error('Location permission is required to transmit live delivery updates to customers.', { id: 'gps-start' });
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  };
+
+  // Resume tracking if route was active and stops remain
+  useEffect(() => {
+    if (isRouteActive && pendingStops.length > 0 && gpsWatchId == null) {
+      startGpsWatch();
+    }
+    return () => {
+      if (gpsWatchId != null && navigator.geolocation) {
+        navigator.geolocation.clearWatch(gpsWatchId);
+      }
+    };
+  }, [isRouteActive, pendingStops.length]);
+
+  // Terminate GPS tracking immediately once all deliveries are complete
+  useEffect(() => {
+    if (pendingStops.length === 0 && isRouteActive) {
+      stopGpsWatch();
+    }
+  }, [pendingStops.length, isRouteActive]);
 
   // Fetch pending stops from live backend (scoped by riderId for Solution A)
   const fetchPendingStops = async () => {
@@ -234,6 +347,56 @@ export default function DailyRunSheet({
             onClick={() => onSyncQueue?.(true)}
           >
             <RefreshCw size={12} /> Sync Now
+          </button>
+        </div>
+      )}
+
+      {/* 📦 Hub Package Collection & Privacy GPS Activation */}
+      {pendingStops.length > 0 && !isRouteActive && (
+        <div className="hubPickupCard">
+          <div className="hubPickupHeader">
+            <div className="hubPickupIcon">📦</div>
+            <div>
+              <div style={{ fontWeight: 800, fontSize: '14px', color: '#f8fafc' }}>
+                Collect Packages at Karaikal Hub
+              </div>
+              <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px' }}>
+                Load assigned parcels ({pendingStops.length} stops) into delivery bag before departing
+              </div>
+            </div>
+          </div>
+          <p style={{ fontSize: '11px', color: '#64748b', margin: '4px 0 6px 0', lineHeight: 1.4 }}>
+            🔒 <strong>Privacy Guarantee:</strong> GPS is completely inactive at the Hub and off-shift. Location transmission starts only when you confirm package pickup to give customers live order tracking radar.
+          </p>
+          <button
+            type="button"
+            className="startRouteGpsBtn"
+            onClick={handleDepartHubWithPackages}
+          >
+            <Radio size={16} /> Collect Packages & Depart Hub (Start Live Route GPS)
+          </button>
+        </div>
+      )}
+
+      {/* 🛰️ Live Route GPS Active Bar */}
+      {isRouteActive && (
+        <div className="liveGpsActiveBar">
+          <div className="liveGpsDot pulsing" />
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <span style={{ fontSize: '12px', fontWeight: 700, color: '#4ade80', display: 'flex', alignItems: 'center', gap: '5px' }}>
+              <ShieldCheck size={14} /> Live Route GPS Active (Customer Radar On)
+            </span>
+            <span style={{ fontSize: '10px', color: '#86efac' }}>
+              {lastGpsCoords?.updatedAt ? `Last ping: ${lastGpsCoords.updatedAt}` : 'Transmitting encrypted pings to customers'}
+            </span>
+          </div>
+          <button
+            type="button"
+            className="pauseGpsBtn"
+            onClick={stopGpsWatch}
+            title="Pause tracking if returning to Hub station"
+          >
+            Pause / Return to Hub
           </button>
         </div>
       )}
