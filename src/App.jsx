@@ -75,20 +75,42 @@ export default function App() {
     } catch (_) {}
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     if (window.confirm(`Sign out ${rider?.name || 'driver'} from this device?`)) {
+      const riderId = rider?.username || rider?.riderId;
+      try {
+        if (riderId) {
+          fetch('https://motodc-official.vercel.app/api/delivery-auth?action=logout', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ riderId }),
+          }).catch(() => {});
+        }
+      } catch (_) {}
       setRider(null);
       try {
         localStorage.removeItem('motodc_partner_rider');
+        localStorage.removeItem('motodc_route_active_' + rider?.username);
       } catch (_) {}
-      toast.success('Signed out successfully');
+      toast.success('Signed out successfully. One-time pass consumed.');
     }
   };
 
   const forceAutoLogoff = (reason) => {
+    const riderId = rider?.username || rider?.riderId;
+    try {
+      if (riderId) {
+        fetch('https://motodc-official.vercel.app/api/delivery-auth?action=logout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ riderId }),
+        }).catch(() => {});
+      }
+    } catch (_) {}
     setRider(null);
     try {
       localStorage.removeItem('motodc_partner_rider');
+      localStorage.removeItem('motodc_route_active_' + rider?.username);
     } catch (_) {}
     toast.error(reason || 'Shift ended. Automatically logged off.', { duration: 8000, icon: '⏰' });
   };

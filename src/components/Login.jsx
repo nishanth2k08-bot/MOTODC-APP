@@ -58,6 +58,79 @@ export default function Login({ onLogin, onEnterChangePassword, theme, onToggleT
     scheduleReminder();
   }, []);
 
+  // 0. Raise Emergency 1-Time Login Request to Hub Manager
+  const handleRaiseEmergencyRequest = async () => {
+    const cleanUser = username.trim().toUpperCase();
+    if (!cleanUser) return;
+    setRequestLoading(true);
+    try {
+      const res = await fetch('https://motodc-official.vercel.app/api/delivery-auth?action=request-emergency-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: cleanUser,
+          reason: `Late check-in attempt at ${lateBlockData?.istTimeString || 'past cutoff'}`,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to submit request');
+      toast.success('Emergency login request sent to Hub Manager!');
+      setRequestSent(true);
+      setRequestStatus('pending');
+
+      // Auto-poll approval status every 4s
+      const pollTimer = setInterval(async () => {
+        try {
+          const checkRes = await fetch(`https://motodc-official.vercel.app/api/delivery-auth?action=check-emergency-login-status&username=${cleanUser}`);
+          const checkData = await checkRes.json();
+          if (checkRes.ok && checkData.oneTimePassGranted) {
+            clearInterval(pollTimer);
+            toast.success('🎉 Hub Manager Approved 1-Time Pass! Logging in...', { icon: '🔑', duration: 4000 });
+            setShowLateModal(false);
+            const formMock = { preventDefault: () => {} };
+            handleLoginSubmit(formMock);
+          } else if (checkData.status === 'rejected') {
+            clearInterval(pollTimer);
+            toast.error('Emergency request was rejected by Admin.');
+            setRequestSent(false);
+            setRequestStatus('rejected');
+          }
+        } catch (_) {}
+      }, 4000);
+    } catch (err) {
+      toast.error(err.message || 'Error submitting request');
+    } finally {
+      setRequestLoading(false);
+    }
+  };
+
+  // Check Approval Status manually
+  const handleCheckApprovalStatus = async () => {
+    const cleanUser = username.trim().toUpperCase();
+    if (!cleanUser) return;
+    setCheckingStatus(true);
+    try {
+      const res = await fetch(`https://motodc-official.vercel.app/api/delivery-auth?action=check-emergency-login-status&username=${cleanUser}`);
+      const data = await res.json();
+      if (res.ok && data.oneTimePassGranted) {
+        toast.success('🎉 Hub Manager Approved 1-Time Pass! Logging in...', { icon: '🔑', duration: 4000 });
+        setShowLateModal(false);
+        const formMock = { preventDefault: () => {} };
+        handleLoginSubmit(formMock);
+      } else if (data.status === 'rejected') {
+        toast.error('Hub Manager rejected the emergency login request.');
+        setRequestSent(false);
+        setRequestStatus('rejected');
+      } else {
+        toast('Approval is still pending with Hub Manager.', { icon: '⏳' });
+      }
+    } catch (err) {
+      toast.error('Failed to check approval status');
+    } finally {
+      setCheckingStatus(false);
+    }
+  };
+
   // 1. Submit Normal Login
   const handleLoginSubmit = async (e) => {
     e.preventDefault();
@@ -433,6 +506,71 @@ export default function Login({ onLogin, onEnterChangePassword, theme, onToggleT
             </div>
 
             <div className="lateModalActions">
+              {requestSent ? (
+                <div style={{
+                  background: 'rgba(30, 41, 59, 0.8)',
+                  border: '1px solid rgba(56, 189, 248, 0.3)',
+                  borderRadius: '10px',
+                  padding: '12px',
+                  textAlign: 'center',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '8px'
+                }}>
+                  <span style={{ fontSize: '12px', color: '#38bdf8', fontWeight: 700 }}>
+                    ⏳ Emergency Request Sent to Hub Manager!
+                  </span>
+                  <small style={{ fontSize: '11px', color: '#94a3b8' }}>
+                    Admin will review and approve 1-Time Pass in the dispatch portal.
+                  </small>
+                  <button
+                    type="button"
+                    style={{
+                      background: '#0284c7',
+                      color: '#fff',
+                      border: 'none',
+                      borderRadius: '8px',
+                      padding: '8px 12px',
+                      fontSize: '12px',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '6px'
+                    }}
+                    onClick={handleCheckApprovalStatus}
+                    disabled={checkingStatus}
+                  >
+                    {checkingStatus ? 'Checking...' : '🔄 Check Approval Status'}
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  style={{
+                    background: 'linear-gradient(135deg, #7c3aed, #6d28d9)',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: '10px',
+                    padding: '12px 14px',
+                    fontSize: '13px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    boxShadow: '0 4px 14px rgba(124, 58, 237, 0.35)'
+                  }}
+                  onClick={handleRaiseEmergencyRequest}
+                  disabled={requestLoading}
+                >
+                  <KeyRound size={16} />
+                  {requestLoading ? 'Submitting Request...' : 'Raise Emergency 1-Time Login Request'}
+                </button>
+              )}
+
               <a href="tel:+919842104829" className="hubManagerCallBtn">
                 <Phone size={15} /> Call Hub Manager for Clearance
               </a>
