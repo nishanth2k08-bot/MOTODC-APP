@@ -163,6 +163,17 @@ export const scheduleNativeShiftAlarms = async () => {
           },
           isExactNotification: false,
         },
+        {
+          id: 9918,
+          title: '🏁 Shift Hours Concluded (8:30 PM)',
+          body: 'Standard delivery operations have ended for today. Attendance recorded at Karaikal Hub. Rest well!',
+          channelId: 'motodc_shift_alerts',
+          schedule: {
+            on: { hour: 20, minute: 30 },
+            allowWhileIdle: true,
+          },
+          isExactNotification: false,
+        },
       ],
     });
     console.log('[MotoDC] Native OS-level shift alarms scheduled successfully.');
@@ -178,7 +189,7 @@ export const cancelNativeShiftAlarms = async () => {
   try {
     if (typeof LocalNotifications === 'undefined') return;
     await LocalNotifications.cancel({
-      notifications: [{ id: 9915 }, { id: 9916 }, { id: 9917 }],
+      notifications: [{ id: 9915 }, { id: 9916 }, { id: 9917 }, { id: 9918 }],
     });
     console.log('[MotoDC] Native shift alarms disarmed (rider on shift).');
   } catch (err) {

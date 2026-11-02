@@ -1,7 +1,7 @@
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { Geolocation } from '@capacitor/geolocation';
 import React, { useState, useEffect } from 'react';
-import { initNotifications, checkAndNotifyLoginTime, scheduleNativeShiftAlarms, cancelNativeShiftAlarms } from './notificationService';
+import { initNotifications, checkAndNotifyLoginTime, scheduleNativeShiftAlarms, cancelNativeShiftAlarms, sendLocalNotification } from './notificationService';
 import { collection, getDocs, updateDoc, doc, arrayUnion, Timestamp } from 'firebase/firestore';
 import { db } from './firebase';
 import { toast, Toaster } from 'react-hot-toast';
@@ -99,6 +99,7 @@ export default function App() {
   const handleLogout = async () => {
     if (window.confirm(`Sign out ${rider?.name || 'driver'} from this device?`)) {
       const riderId = rider?.username || rider?.riderId;
+      const riderName = rider?.name || 'Partner';
       try {
         if (riderId) {
           fetch('https://motodc-official.vercel.app/api/delivery-auth?action=logout', {
@@ -114,12 +115,22 @@ export default function App() {
         localStorage.removeItem('motodc_route_active_' + rider?.username);
       } catch (_) {}
       scheduleNativeShiftAlarms().catch(() => {});
+
+      // Send native status bar notification
+      sendLocalNotification({
+        id: 9921,
+        title: '👋 Shift Concluded – Signed Out',
+        body: `You signed out successfully, ${riderName}. See you tomorrow morning!`,
+        channelId: 'motodc_shift_alerts',
+      });
+
       toast.success('Signed out successfully. One-time pass consumed.');
     }
   };
 
   const forceAutoLogoff = (reason) => {
     const riderId = rider?.username || rider?.riderId;
+    const riderName = rider?.name || 'Partner';
     try {
       if (riderId) {
         fetch('https://motodc-official.vercel.app/api/delivery-auth?action=logout', {
@@ -135,6 +146,15 @@ export default function App() {
       localStorage.removeItem('motodc_route_active_' + rider?.username);
     } catch (_) {}
     scheduleNativeShiftAlarms().catch(() => {});
+
+    // Send immediate native notification to Android status bar
+    sendLocalNotification({
+      id: 9920,
+      title: '🏁 Shift Concluded – Automatically Logged Off',
+      body: reason || `Thank you ${riderName}! Your scheduled shift has ended. Shift attendance is recorded at Karaikal Hub. Rest well!`,
+      channelId: 'motodc_shift_alerts',
+    });
+
     toast.error(reason || 'Shift ended. Automatically logged off.', { duration: 8000, icon: '⏰' });
   };
 
@@ -150,6 +170,20 @@ export default function App() {
 
       const cutoffMinutes = rider.shiftEndMinutes || (rider.serviceMode === 'Power Rider' ? 1290 : 1230);
       const startMinutes = rider.shiftStartMinutes || (rider.serviceMode === 'Power Rider' ? 480 : 510);
+
+      // Advance warning 15 minutes before shift end (e.g. 8:15 PM)
+      if (currentMinutes === cutoffMinutes - 15) {
+        const warnedKey = 'motodc_shift_ending_warned_' + istDate.toISOString().slice(0, 10);
+        if (!sessionStorage.getItem(warnedKey)) {
+          sessionStorage.setItem(warnedKey, 'true');
+          sendLocalNotification({
+            id: 9919,
+            title: '⚠️ Shift Ending in 15 Minutes',
+            body: `Your shift concludes at ${rider.shiftLabel ? rider.shiftLabel.split('–')[1]?.trim() : '8:30 PM'}. Wrap up active deliveries and head back to Karaikal Hub.`,
+            channelId: 'motodc_shift_alerts',
+          });
+        }
+      }
 
       if (currentMinutes > cutoffMinutes || currentMinutes < startMinutes) {
         forceAutoLogoff(`Shift Ended: Your scheduled delivery hours (${rider.shiftLabel || '8:30 AM – 8:30 PM'}) are complete. Automatically signed out.`);

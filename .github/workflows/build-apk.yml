@@ -61,19 +61,19 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/heads/main')
         with:
-          tag_name: v1.0.13
-          name: "MotoDC Partner Android APK (v1.0.13)"
+          tag_name: v1.0.14
+          name: "MotoDC Partner Android APK (v1.0.14)"
           body: |
-            ## 🚀 MotoDC Partner Delivery App (Android APK v1.0.13)
+            ## 🚀 MotoDC Partner Delivery App (Android APK v1.0.14)
             
             Download and install **MotoDC-Partner.apk** on any Android device.
             
-            ### Fixes & Enhancements in v1.0.13:
-            * ⏰ **Native OS-Level Shift Alarms (Works Even If App is Cleared/Closed)**: Registered 8:45 AM (15 mins before cutoff) and 8:15 AM check-in opening alarms directly in Android system `AlarmManager` with `allowWhileIdle` (`RTC_WAKEUP`). Alarms ring reliably even if the app is closed or cleared from Recent Apps!
-            * 🛡️ **Auto Disarm On-Shift**: Automatically silences and cancels shift alarms once the driver logs in, and re-arms them upon sign out.
+            ### Fixes & Enhancements in v1.0.14:
+            * 🏁 **Shift Logoff & Completion Native Notifications**: Native Android notifications and audio chime now fire when the shift ends (8:30 PM), when automatic logoff triggers, and when manual sign-out occurs.
+            * ⚠️ **Shift Ending 15-Minute Advance Warning**: Push alert at 8:15 PM reminding riders to finish active handovers and return to Karaikal Hub.
+            * ⏰ **Native OS-Level Shift Alarms (Works Even If App is Cleared/Closed)**: Registered 8:45 AM, 8:15 AM, and 8:30 PM alarms directly in Android system `AlarmManager` with `allowWhileIdle` (`RTC_WAKEUP`).
             * 📦 **Real-Time Package Notifications**: Native alerts, vibration, and audio chime when packages are assigned to your run sheet.
-            * 🔒 **Customer-Only PIN Security**: 4-digit PIN is strictly visible only to the recipient, fully hidden from the partner app.
-            * ⚡ **Zero-Crash Startup**: Clean hook evaluation and zero TDZ reference errors.
+            * 🔍 **Doorstep Barcode Scanner**: Instant camera barcode scanning of parcel labels for rapid order verification at customer doorsteps.
           files: release-output/MotoDC-Partner.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
