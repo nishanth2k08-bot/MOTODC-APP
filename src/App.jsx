@@ -85,6 +85,37 @@ export default function App() {
     }
   };
 
+  const forceAutoLogoff = (reason) => {
+    setRider(null);
+    try {
+      localStorage.removeItem('motodc_partner_rider');
+    } catch (_) {}
+    toast.error(reason || 'Shift ended. Automatically logged off.', { duration: 8000, icon: '⏰' });
+  };
+
+  // Strict Shift Monitor: Automatically logs off rider when shift ends
+  useEffect(() => {
+    if (!rider) return;
+
+    const evaluateShift = () => {
+      const now = new Date();
+      const utcMillis = now.getTime() + now.getTimezoneOffset() * 60000;
+      const istDate = new Date(utcMillis + 330 * 60000);
+      const currentMinutes = istDate.getHours() * 60 + istDate.getMinutes();
+
+      const cutoffMinutes = rider.shiftEndMinutes || (rider.serviceMode === 'Power Rider' ? 1290 : 1230);
+      const startMinutes = rider.shiftStartMinutes || (rider.serviceMode === 'Power Rider' ? 480 : 510);
+
+      if (currentMinutes > cutoffMinutes || currentMinutes < startMinutes) {
+        forceAutoLogoff(`Shift Ended: Your scheduled delivery hours (${rider.shiftLabel || '8:30 AM – 8:30 PM'}) are complete. Automatically signed out.`);
+      }
+    };
+
+    const interval = setInterval(evaluateShift, 60000);
+    evaluateShift();
+    return () => clearInterval(interval);
+  }, [rider]);
+
   // Run sheet persistence
   const [runSheet, setRunSheet] = useState(() => {
     try {

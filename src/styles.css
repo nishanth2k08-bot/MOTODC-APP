@@ -317,6 +317,17 @@ body {
   object-fit: cover !important;
 }
 
+/* Completely suppress Html5Qrcode built-in second scanner with four white corner borders */
+#qr-shaded-region,
+#qr-shaded-region *,
+#reader__scan_region svg,
+#reader__scan_region,
+#reader div[style*="border"] {
+  display: none !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
 /* Reticle Target Frame */
 .reticleOverlay {
   position: absolute;
@@ -332,7 +343,7 @@ body {
   position: relative;
   width: 250px;
   height: 170px;
-  border: 1.5px solid rgba(255, 255, 255, 0.25);
+  border: none !important;
   border-radius: 12px;
   overflow: hidden;
 }

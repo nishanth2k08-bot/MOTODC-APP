@@ -197,6 +197,14 @@ export default function Login({ onLogin, onEnterChangePassword, theme, onToggleT
             </button>
           </form>
 
+          <div style={{ marginTop: '14px', padding: '10px 14px', borderRadius: '8px', background: 'rgba(30, 41, 59, 0.6)', border: '1px solid rgba(255, 255, 255, 0.08)', fontSize: '11px', color: '#94a3b8', textAlign: 'center', lineHeight: '1.4' }}>
+            <span style={{ color: '#38bdf8', fontWeight: 700 }}>⏰ Delivery Shift Hours (IST):</span>
+            <br />
+            Standard: 8:30 AM – 8:30 PM • Power Rider: 8:00 AM – 9:30 PM
+            <br />
+            <span style={{ fontSize: '10px', color: '#64748b' }}>Login is only permitted during shift hours with automatic logoff at cutoff</span>
+          </div>
+
           <div className="forgotPinFooter">
             <button
               type="button"
