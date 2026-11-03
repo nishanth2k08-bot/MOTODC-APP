@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+﻿import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { collection, onSnapshot, doc, updateDoc, arrayUnion } from 'firebase/firestore';
 import { db } from './firebase';
 import ShippingLabelModal from './ShippingLabelModal';
@@ -121,7 +121,7 @@ export default function App() {
           localStorage.removeItem('motodc_hub_auth');
         } catch (_) {}
         toast('Operational shift completed (8:30 PM). Station terminal automatically locked.', {
-          icon: '🌙',
+          icon: 'ðŸŒ™',
           duration: 6000,
         });
       }
@@ -139,9 +139,9 @@ export default function App() {
       const shiftEnded = isShiftCompleted();
       if (shiftEnded) {
         setAfterHoursOverride(true);
-        toast('Overtime / After-Hours Access Unlocked (Shift ended at 8:30 PM)', { icon: '⚠️', duration: 5000 });
+        toast('Overtime / After-Hours Access Unlocked (Shift ended at 8:30 PM)', { icon: 'âš ï¸', duration: 5000 });
       } else {
-        toast.success('Station Unlocked • Karaikal Hub Packing Terminal Active');
+        toast.success('Station Unlocked â€¢ Karaikal Hub Packing Terminal Active');
       }
       setStationAuth(true);
       setPinError('');
@@ -160,7 +160,7 @@ export default function App() {
     try {
       localStorage.removeItem('motodc_hub_auth');
     } catch (_) {}
-    toast('Station locked', { icon: '🔒' });
+    toast('Station locked', { icon: 'ðŸ”’' });
   };
 
   // Real-Time Sync with Firestore Orders
@@ -177,7 +177,7 @@ export default function App() {
       const docs = snap.docs.map((d) => ({ ...d.data(), id: d.id, collectionType: 'cod orders', paymentMethod: 'cod' }));
       if (!initialLoad && docs.length > codOrders.length) {
         playChime();
-        toast('New order received for packing!', { icon: '📦' });
+        toast('New order received for packing!', { icon: 'ðŸ“¦' });
       }
       setCodOrders(docs);
       setLoading(false);
@@ -190,7 +190,7 @@ export default function App() {
       const docs = snap.docs.map((d) => ({ ...d.data(), id: d.id, collectionType: 'online orders', paymentMethod: 'online' }));
       if (!initialLoad && docs.length > onlineOrders.length) {
         playChime();
-        toast('New order received for packing!', { icon: '📦' });
+        toast('New order received for packing!', { icon: 'ðŸ“¦' });
       }
       setOnlineOrders(docs);
       setLoading(false);
@@ -272,8 +272,8 @@ export default function App() {
     });
 
     if (matched) {
-      toast.success(`📦 Barcode Matched: Order #${matched.orderId || matched.id}`, {
-        icon: '⚡',
+      toast.success(`ðŸ“¦ Barcode Matched: Order #${matched.orderId || matched.id}`, {
+        icon: 'âš¡',
         duration: 4000,
       });
       // Automatically switch to correct tab and open label modal
@@ -289,7 +289,7 @@ export default function App() {
       setLabelOrder(matched);
     } else {
       toast(`Scanned: "${rawCode}" (No order match found in queue)`, {
-        icon: '🔍',
+        icon: 'ðŸ”',
         duration: 4500,
       });
       setSearchQuery(rawCode);
@@ -366,9 +366,9 @@ export default function App() {
       });
 
       playChime();
-      toast.success(`✅ Order #${order.orderId || order.id} Packed & Staged into ${order.corridorMeta.name}!`, {
+      toast.success(`âœ… Order #${order.orderId || order.id} Packed & Staged into ${order.corridorMeta.name}!`, {
         duration: 5000,
-        icon: '📦',
+        icon: 'ðŸ“¦',
       });
     } catch (err) {
       console.error('Mark packed error:', err);
@@ -388,7 +388,7 @@ export default function App() {
           <div className="hubStationLockCard">
             <div className="hubStationLogoRow">
               <img
-                src="/icon-192.png"
+                src="/hub-app-icon.png"
                 alt="MotoDC Hub"
                 style={{ width: 44, height: 44, borderRadius: 10, objectFit: 'cover', boxShadow: '0 4px 14px rgba(255, 49, 87, 0.3)' }}
               />
@@ -432,22 +432,37 @@ export default function App() {
             </div>
 
             <form onSubmit={handlePinSubmit} className="hubStationPinForm">
-              <label htmlFor="station-pin-input">STATION PIN</label>
+              <label htmlFor="station-pin-input">STATION PIN (4 DIGITS)</label>
               <div className="hubPinInputWrap">
                 <Key size={18} color="#94a3b8" />
                 <input
                   id="station-pin-input"
                   type="password"
-                  maxLength={6}
-                  placeholder="••••"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  maxLength={4}
+                  autoComplete="one-time-code"
+                  placeholder="â€¢â€¢â€¢â€¢"
                   value={pinInput}
                   onChange={(e) => {
-                    setPinInput(e.target.value);
+                    const clean = e.target.value.replace(/\D/g, '').slice(0, 4);
+                    setPinInput(clean);
                     setPinError('');
                   }}
                   autoFocus
                 />
               </div>
+
+              {/* 4-Digit Visual PIN Indicators */}
+              <div className="hubPinDotsRow">
+                {[0, 1, 2, 3].map((idx) => (
+                  <div
+                    key={idx}
+                    className={`hubPinDot ${pinInput.length > idx ? 'filled' : ''}`}
+                  />
+                ))}
+              </div>
+
               {pinError && <div className="hubPinError">{pinError}</div>}
 
               <button type="submit" className="hubStationUnlockBtn">
@@ -475,90 +490,110 @@ export default function App() {
     <div className="hubStationContainer">
       <Toaster position="top-right" />
 
-      {/* Top Header Row */}
+      {/* Top Header Row - Ergonomic & Mobile-First */}
       <header className="hubStationHeader">
-        <div className="hubStationBrand">
-          <img
-            src="/icon-192.png"
-            alt="MotoDC Hub"
-            style={{ width: 38, height: 38, borderRadius: 8, objectFit: 'cover', boxShadow: '0 2px 10px rgba(255, 49, 87, 0.25)' }}
-          />
-          <div>
-            <h1>Karaikal Hub <span>Fulfillment Station</span></h1>
-            <p>Warehouse Packing • Quality Inspection • Parcel Staging Racks</p>
+        {/* Row 1: Brand + Title + Quick Actions */}
+        <div className="hubHeaderTopRow">
+          <div className="hubStationBrand">
+            <img
+              src="/hub-app-icon.png"
+              alt="MotoDC Hub"
+              className="hubBrandLogo"
+            />
+            <div className="hubBrandText">
+              <h1>Karaikal Hub <span>Terminal</span></h1>
+              <p>Warehouse Fulfillment & Staging</p>
+            </div>
+          </div>
+
+          <div className="hubHeaderQuickActions">
+            <ThemeToggle />
+            <button
+              type="button"
+              className="hubLockStationBtn"
+              onClick={handleStationLock}
+              title="Lock Station Terminal"
+              aria-label="Lock Station Terminal"
+            >
+              <Lock size={14} />
+              <span>Lock</span>
+            </button>
           </div>
         </div>
 
-        <div className="hubStationMetaRight">
-          {/* Hardware Barcode Scanner Active Indicator */}
-          <div className="hubScannerIndicator" title="USB / Bluetooth Laser Barcode Scanner is listening">
-            <Zap size={14} color="#38bdf8" />
-            <span>Hardware Scanner: <strong>Active</strong></span>
-          </div>
-
-          {/* Camera Barcode Scanner Launch Button */}
-          <button
-            type="button"
-            className="hubOpenScannerBtn"
-            onClick={() => setScannerOpen(true)}
-            title="Open Camera Barcode Scanner"
-          >
-            <Camera size={15} /> Barcode Scanner
-          </button>
-
+        {/* Row 2: Status Indicators */}
+        <div className="hubHeaderStatusRow">
           <div className="hubShiftBadge">
             <span className="livePulseDot" />
-            <span>Karaikal Central Warehouse (Active)</span>
+            <span>Karaikal Central (Active Shift)</span>
           </div>
 
-          <ThemeToggle />
-
-          <button
-            type="button"
-            className="hubLockStationBtn"
-            onClick={handleStationLock}
-            title="Lock Station Terminal"
-          >
-            <Lock size={15} /> Lock Station
-          </button>
+          <div className="hubScannerIndicator" title="USB / Bluetooth Laser Barcode Scanner is listening">
+            <Zap size={13} color="#38bdf8" />
+            <span>Hardware Laser: <strong>Ready</strong></span>
+          </div>
         </div>
+
+        {/* Row 3: Prominent Barcode Scanner Action Button (Bold Crimson Red) */}
+        <button
+          type="button"
+          className="hubOpenScannerBtn"
+          onClick={() => setScannerOpen(true)}
+          title="Open Camera Barcode Scanner"
+        >
+          <Camera size={17} />
+          <span>Open Barcode Scanner (Camera)</span>
+        </button>
       </header>
 
       {/* Navigation Toolbar */}
       <div className="hubStationToolbar">
-        <div className="hubTabGroup">
+        <div className="hubTabGroup" role="tablist">
           <button
             type="button"
+            role="tab"
+            aria-selected={activeTab === 'pending'}
             className={`hubTabBtn ${activeTab === 'pending' ? 'active' : ''}`}
             onClick={() => setActiveTab('pending')}
           >
-            <Clock size={15} /> Awaiting Packing & Label ({pendingCount})
+            <Clock size={15} />
+            <span>Awaiting Packing</span>
+            <span className="hubTabCount">{pendingCount}</span>
           </button>
           <button
             type="button"
+            role="tab"
+            aria-selected={activeTab === 'packed'}
             className={`hubTabBtn ${activeTab === 'packed' ? 'active' : ''}`}
             onClick={() => setActiveTab('packed')}
           >
-            <CheckCircle2 size={15} /> Packed & Staged at Hub ({packedCount})
+            <CheckCircle2 size={15} />
+            <span>Packed & Staged</span>
+            <span className="hubTabCount">{packedCount}</span>
           </button>
           <button
             type="button"
+            role="tab"
+            aria-selected={activeTab === 'in_transit'}
             className={`hubTabBtn ${activeTab === 'in_transit' ? 'active' : ''}`}
             onClick={() => setActiveTab('in_transit')}
           >
-            <Truck size={15} /> In Transit / On Road ({inTransitCount})
+            <Truck size={15} />
+            <span>In Transit</span>
+            <span className="hubTabCount">{inTransitCount}</span>
           </button>
         </div>
 
-        <div className="hubToolbarRight">
+        <div className="hubToolbarControls">
           {/* Corridor Filter */}
           <div className="hubCorridorSelectWrap">
-            <span>Filter by Corridor:</span>
+            <label htmlFor="corridor-filter-select">Corridor:</label>
             <select
+              id="corridor-filter-select"
               value={selectedCorridor}
               onChange={(e) => setSelectedCorridor(e.target.value)}
             >
-              <option value="all">All Corridors</option>
+              <option value="all">All Corridors (All Racks)</option>
               {Object.values(CORRIDOR_METADATA).map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name} ({c.code})
@@ -569,20 +604,22 @@ export default function App() {
 
           {/* Search Box / Barcode Scan Input */}
           <div className="hubSearchBox">
-            <Search size={15} />
+            <Search size={15} className="hubSearchIcon" />
             <input
               type="text"
               placeholder="Scan / Search Order ID, Customer, Part..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              aria-label="Search orders"
             />
             {searchQuery && (
               <button
                 type="button"
                 className="clearSearchBtn"
                 onClick={() => setSearchQuery('')}
+                aria-label="Clear search"
               >
-                ✕
+                <X size={14} />
               </button>
             )}
           </div>
@@ -594,7 +631,7 @@ export default function App() {
         <div className="hubLastScannedBanner">
           <Barcode size={16} />
           <span>Last Barcode Input: <strong>{lastScannedBarcode}</strong></span>
-          <button type="button" onClick={() => setLastScannedBarcode('')}>✕</button>
+          <button type="button" onClick={() => setLastScannedBarcode('')}>âœ•</button>
         </div>
       )}
 
@@ -642,7 +679,7 @@ export default function App() {
                         #{order.orderId || order.id}
                       </div>
                       <span className="hubPaymentTag">
-                        {order.paymentMethod === 'cod' ? '💵 COD' : '💳 Prepaid (Paid)'}
+                        {order.paymentMethod === 'cod' ? 'ðŸ’µ COD' : 'ðŸ’³ Prepaid (Paid)'}
                       </span>
                     </div>
 
@@ -656,7 +693,7 @@ export default function App() {
                       }}
                     >
                       <MapPin size={12} />
-                      <span>{order.corridorMeta.code} · {order.corridorMeta.name}</span>
+                      <span>{order.corridorMeta.code} Â· {order.corridorMeta.name}</span>
                     </div>
                   </div>
 
@@ -708,7 +745,7 @@ export default function App() {
                               <span className="hubItemName">{item.name}</span>
                               <span className="hubItemMeta">
                                 Qty: <strong>{item.qty || 1}</strong>
-                                {item.variant ? ` • ${item.variant}` : ''}
+                                {item.variant ? ` â€¢ ${item.variant}` : ''}
                               </span>
                             </div>
                           </div>
@@ -752,14 +789,14 @@ export default function App() {
                     {isPacked && (
                       <div className="hubStatusConfirmedBadge">
                         <CheckCircle2 size={16} />
-                        <span>Packed • Staged in Rack {order.corridorMeta.code}</span>
+                        <span>Packed â€¢ Staged in Rack {order.corridorMeta.code}</span>
                       </div>
                     )}
 
                     {isInTransit && (
                       <div className="hubStatusConfirmedBadge inTransit">
                         <Truck size={16} />
-                        <span>In Transit • Courier Handover Verified</span>
+                        <span>In Transit â€¢ Courier Handover Verified</span>
                       </div>
                     )}
                   </div>
@@ -791,3 +828,4 @@ export default function App() {
     </div>
   );
 }
+
