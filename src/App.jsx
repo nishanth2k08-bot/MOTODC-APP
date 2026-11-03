@@ -510,10 +510,17 @@ export default function App() {
         });
 
         if (updated.length >= pendingStopsList.length && pendingStopsList.length > 0) {
-          toast.success('🎉 All assigned parcels verified in delivery bag! Route & GPS unlocked.', {
+          toast.success('🎉 All assigned parcels verified in delivery bag! Returning to run sheet...', {
             icon: '🚀',
-            duration: 6000,
+            duration: 5000,
           });
+          // Close scanner and return to Daily Run Sheet immediately
+          setTimeout(() => {
+            setHubScanMode(false);
+            setVerifiedOrder(null);
+            setTargetDoorstepStop(null);
+            setActiveTab('runsheet');
+          }, 600);
         }
       } else {
         playNotificationChime('shift');

@@ -48,6 +48,16 @@ export default function Scanner({
           try {
             if (scannerRef.current && scannerRef.current.isScanning) {
               scannerRef.current.pause(true);
+              // In hubScanMode, unpause after 1.2s so the rider can scan the next package without getting stuck
+              if (hubScanMode) {
+                setTimeout(() => {
+                  try {
+                    if (scannerRef.current && scannerRef.current.isPaused) {
+                      scannerRef.current.resume();
+                    }
+                  } catch (_) {}
+                }, 1200);
+              }
             }
           } catch (_) {}
 
