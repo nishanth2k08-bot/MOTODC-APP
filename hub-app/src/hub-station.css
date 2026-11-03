@@ -1,0 +1,1594 @@
+/* ==========================================================================
+   Karaikal Hub Fulfillment & Packing Station Styling
+   ========================================================================== */
+.hubStationContainer {
+  min-height: calc(100vh - 80px);
+  padding: 24px 32px 60px;
+  background: #090c12;
+  color: #f1f5f9;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+/* Lock Screen */
+.hubStationLockScreen {
+  min-height: 80vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.hubStationLockCard {
+  width: 100%;
+  max-width: 480px;
+  background: #0d121c;
+  border: 1px solid #1e293b;
+  border-radius: 18px;
+  padding: 32px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.4);
+}
+
+.hubStationLogoRow {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.hubStationLogoRow h2 {
+  font-size: 22px;
+  font-weight: 800;
+  margin: 0;
+  color: #fff;
+}
+
+.hubStationLogoRow h2 span {
+  color: #ff3157;
+}
+
+.hubStationLogoRow p {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+.hubStationLockNotice {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: rgba(34, 197, 94, 0.08);
+  border: 1px solid rgba(34, 197, 94, 0.25);
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 24px;
+}
+
+.hubStationLockNotice strong {
+  display: block;
+  font-size: 13px;
+  color: #4ade80;
+  margin-bottom: 2px;
+}
+
+.hubStationLockNotice p {
+  margin: 0;
+  font-size: 11px;
+  color: #94a3b8;
+  line-height: 1.4;
+}
+
+.hubStationPinForm label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: #cbd5e1;
+  margin-bottom: 8px;
+}
+
+.hubPinInputWrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #06090e;
+  border: 1px solid #334155;
+  border-radius: 10px;
+  padding: 12px 16px;
+  margin-top: 6px;
+}
+
+.hubPinInputWrap input {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #fff;
+  font-size: 20px;
+  letter-spacing: 12px;
+  width: 100%;
+  font-family: monospace;
+  font-weight: 700;
+}
+
+.hubPinError {
+  color: #ef4444;
+  font-size: 12px;
+  font-weight: 600;
+  margin-top: 8px;
+}
+
+.hubStationUnlockBtn {
+  width: 100%;
+  margin-top: 20px;
+  padding: 14px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #ff3157, #e11d48);
+  border: none;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 4px 16px rgba(255, 49, 87, 0.35);
+  transition: all 0.2s;
+}
+
+.hubStationUnlockBtn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 22px rgba(255, 49, 87, 0.45);
+}
+
+.hubStationDefaultHint {
+  text-align: center;
+  margin-top: 14px;
+  font-size: 11px;
+  color: #64748b;
+}
+
+/* Header */
+.hubStationHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #1e293b;
+  margin-bottom: 20px;
+}
+
+.hubHeaderBrand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.hubHeaderBrand h1 {
+  font-size: 22px;
+  font-weight: 800;
+  margin: 0;
+  color: #fff;
+}
+
+.hubHeaderBrand h1 span {
+  color: #ff3157;
+}
+
+.hubHeaderBrand p {
+  margin: 3px 0 0;
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+.hubHeaderActions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.hubStationBadge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #111827;
+  border: 1px solid #374151;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #e5e7eb;
+}
+
+.liveBlinker {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #22c55e;
+  box-shadow: 0 0 8px #22c55e;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); }
+  70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(34, 197, 94, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+}
+
+.hubLockBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #172030;
+  border: 1px solid #2b3b55;
+  color: #94a3b8;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.hubLockBtn:hover {
+  color: #fff;
+  border-color: #ff3157;
+}
+
+/* 4-Stage Operational Banner */
+.hubPipelineBanner {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr auto 1fr auto 1fr;
+  align-items: center;
+  background: #0f1523;
+  border: 1px solid #1e293b;
+  border-radius: 12px;
+  padding: 14px 20px;
+  margin-bottom: 24px;
+}
+
+.hubPipelineStep {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.hubPipelineStep .stepNum {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #1e293b;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+.hubPipelineStep strong {
+  display: block;
+  font-size: 12px;
+  color: #cbd5e1;
+}
+
+.hubPipelineStep small {
+  display: block;
+  font-size: 10px;
+  color: #64748b;
+  margin-top: 1px;
+}
+
+.hubPipelineStep.completed .stepNum {
+  background: rgba(34, 197, 94, 0.2);
+  color: #22c55e;
+  border: 1px solid #22c55e;
+}
+
+.hubPipelineStep.completed strong {
+  color: #e2e8f0;
+}
+
+.hubPipelineStep.current {
+  background: rgba(255, 49, 87, 0.1);
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 49, 87, 0.3);
+}
+
+.hubPipelineStep.current .stepNum {
+  background: #ff3157;
+  color: #fff;
+  box-shadow: 0 0 10px rgba(255, 49, 87, 0.5);
+}
+
+.hubPipelineStep.current strong {
+  color: #ff7189;
+}
+
+.pipelineDivider {
+  width: 24px;
+  height: 2px;
+  background: #1e293b;
+  margin: 0 10px;
+}
+
+/* Toolbar */
+.hubToolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  background: #0d121c;
+  border: 1px solid #1e293b;
+  border-radius: 12px;
+  padding: 12px 18px;
+  margin-bottom: 24px;
+}
+
+.hubTabs {
+  display: flex;
+  gap: 8px;
+}
+
+.hubTabs button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #070a0f;
+  border: 1px solid #1e293b;
+  color: #94a3b8;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.hubTabs button:hover {
+  color: #f1f5f9;
+  border-color: #334155;
+}
+
+.hubTabs button.active {
+  background: #ff3157;
+  color: #fff;
+  border-color: #ff3157;
+  box-shadow: 0 2px 10px rgba(255, 49, 87, 0.3);
+}
+
+.hubCorridorFilter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+.hubCorridorFilter select {
+  background: #070a0f;
+  border: 1px solid #334155;
+  color: #fff;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  outline: none;
+}
+
+.hubSearchBox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #070a0f;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  padding: 8px 14px;
+  min-width: 260px;
+}
+
+.hubSearchBox input {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #fff;
+  font-size: 12px;
+  width: 100%;
+}
+
+/* Orders Grid */
+.hubOrdersGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+  gap: 20px;
+}
+
+.hubOrderCard {
+  background: #0d121c;
+  border: 1px solid #1e293b;
+  border-radius: 14px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.hubOrderCard:hover {
+  border-color: #334155;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+}
+
+.hubOrderCard.orderPacked {
+  border-color: rgba(34, 197, 94, 0.35);
+  background: #0b1414;
+}
+
+.hubCardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.hubOrderId {
+  font-size: 15px;
+  font-weight: 800;
+  color: #fff;
+  font-family: monospace;
+  margin-right: 8px;
+}
+
+.hubOrderMethodBadge {
+  font-size: 10px;
+  font-weight: 700;
+  color: #cbd5e1;
+  background: #1e293b;
+  padding: 2px 7px;
+  border-radius: 5px;
+}
+
+.hubCorridorPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 6px;
+}
+
+.hubCustomerSection {
+  background: #06090e;
+  border: 1px solid #1e293b;
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
+.hubCustomerName {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: #e2e8f0;
+  margin-bottom: 4px;
+}
+
+.hubCustomerName span {
+  color: #94a3b8;
+  font-size: 11px;
+}
+
+.hubAddressText {
+  margin: 0;
+  font-size: 11px;
+  color: #94a3b8;
+  line-height: 1.4;
+}
+
+/* Item Checklist */
+.hubItemsChecklist {
+  background: #090e18;
+  border: 1px solid #1f293d;
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
+.checklistTitle {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: #cbd5e1;
+  margin-bottom: 8px;
+}
+
+.checklistTitle small {
+  color: #38bdf8;
+  font-weight: 600;
+  font-size: 10px;
+}
+
+.checklistList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.checklistItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: #06080d;
+  border: 1px solid #1a2233;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.checklistItem:hover {
+  background: #111726;
+  border-color: #2b3952;
+}
+
+.checklistItem.itemChecked {
+  background: rgba(34, 197, 94, 0.08);
+  border-color: rgba(34, 197, 94, 0.3);
+}
+
+.checklistItem .itemQty {
+  font-size: 11px;
+  font-weight: 800;
+  color: #38bdf8;
+  background: #0f172a;
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+
+.checklistItem .itemName {
+  font-size: 12px;
+  color: #e2e8f0;
+  flex: 1;
+}
+
+.hubStagingRackHint {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11px;
+  color: #94a3b8;
+  background: #090e18;
+  padding: 6px 10px;
+  border-radius: 6px;
+}
+
+.hubStagingRackHint b {
+  color: #fff;
+}
+
+/* Card Actions */
+.hubCardActions {
+  display: flex;
+  gap: 10px;
+  margin-top: auto;
+}
+
+.hubPrintLabelBtn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #172030;
+  border: 1px solid #2b3b55;
+  color: #f1f5f9;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.hubPrintLabelBtn:hover {
+  background: #1f2c42;
+  border-color: #ff3157;
+  color: #fff;
+}
+
+.hubMarkPackedBtn {
+  flex: 1.3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #1e293b;
+  border: 1px solid #334155;
+  color: #94a3b8;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.hubMarkPackedBtn.readyToVerify {
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  border-color: #22c55e;
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(34, 197, 94, 0.3);
+}
+
+.hubMarkPackedBtn:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.hubPackedStatusTag {
+  flex: 1.3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: rgba(34, 197, 94, 0.12);
+  border: 1px solid rgba(34, 197, 94, 0.35);
+  color: #22c55e;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* Empty State */
+.hubEmptyState {
+  min-height: 280px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background: #0d121c;
+  border: 1px dashed #1e293b;
+  border-radius: 14px;
+  padding: 40px;
+  text-align: center;
+  color: #94a3b8;
+}
+
+.hubEmptyState h3 {
+  margin: 0;
+  font-size: 18px;
+  color: #fff;
+}
+
+.hubEmptyState p {
+  margin: 0;
+  font-size: 13px;
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  100% { transform: rotate(360deg); }
+}
+
+@media (max-width: 900px) {
+  .hubPipelineBanner {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  .pipelineDivider {
+    display: none;
+  }
+  .hubToolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .hubTabs {
+    flex-direction: column;
+  }
+}
+
+/* ==========================================================================
+   Light Theme Support for Karaikal Hub Station
+   ========================================================================== */
+body.light-theme .hubStationContainer,
+body.light-theme .hubStationLockScreen {
+  background: #f6f7f9 !important;
+  color: #171a21 !important;
+}
+
+body.light-theme .hubStationLockCard {
+  background: #ffffff !important;
+  border-color: #dfe2e8 !important;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.08) !important;
+}
+
+body.light-theme .hubStationLogoRow h2 {
+  color: #171a21 !important;
+}
+
+body.light-theme .hubStationLogoRow p {
+  color: #64748b !important;
+}
+
+body.light-theme .hubStationLockNotice {
+  background: rgba(34, 197, 94, 0.08) !important;
+  border-color: rgba(34, 197, 94, 0.3) !important;
+}
+
+body.light-theme .hubStationLockNotice strong {
+  color: #16a34a !important;
+}
+
+body.light-theme .hubStationLockNotice p {
+  color: #475569 !important;
+}
+
+body.light-theme .hubStationPinForm label {
+  color: #334155 !important;
+}
+
+body.light-theme .hubPinInputWrap {
+  background: #f8fafc !important;
+  border-color: #cbd5e1 !important;
+}
+
+body.light-theme .hubPinInputWrap input {
+  color: #0f172a !important;
+}
+
+body.light-theme .hubStationDefaultHint {
+  color: #64748b !important;
+}
+
+body.light-theme .hubStationHeader {
+  border-bottom-color: #e2e8f0 !important;
+}
+
+body.light-theme .hubHeaderBrand h1 {
+  color: #171a21 !important;
+}
+
+body.light-theme .hubHeaderBrand p {
+  color: #64748b !important;
+}
+
+body.light-theme .hubStationBadge {
+  background: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+  color: #1e293b !important;
+}
+
+body.light-theme .hubLockBtn {
+  background: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+  color: #475569 !important;
+}
+
+body.light-theme .hubLockBtn:hover {
+  background: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+/* 4-Stage Operational Banner */
+body.light-theme .hubPipelineBanner {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04) !important;
+}
+
+body.light-theme .hubPipelineStep strong {
+  color: #1e293b !important;
+}
+
+body.light-theme .hubPipelineStep small {
+  color: #64748b !important;
+}
+
+body.light-theme .hubPipelineStep.completed strong {
+  color: #16a34a !important;
+}
+
+body.light-theme .pipelineDivider {
+  background: #e2e8f0 !important;
+}
+
+/* Toolbar & Filter Bar */
+body.light-theme .hubToolbar {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04) !important;
+}
+
+body.light-theme .hubTabs button {
+  background: #f1f5f9 !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #475569 !important;
+}
+
+body.light-theme .hubTabs button:hover {
+  background: #e2e8f0 !important;
+  border-color: #94a3b8 !important;
+  color: #0f172a !important;
+}
+
+body.light-theme .hubTabs button.active {
+  background: #ff3157 !important;
+  border-color: #ff3157 !important;
+  color: #ffffff !important;
+  box-shadow: 0 3px 12px rgba(255, 49, 87, 0.35) !important;
+}
+
+body.light-theme .hubCorridorFilter {
+  color: #334155 !important;
+  font-weight: 600 !important;
+}
+
+body.light-theme .hubCorridorFilter select {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #0f172a !important;
+}
+
+body.light-theme .hubCorridorFilter select option {
+  background: #ffffff !important;
+  color: #0f172a !important;
+}
+
+body.light-theme .hubSearchBox {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.04) !important;
+}
+
+body.light-theme .hubSearchBox input {
+  background: transparent !important;
+  color: #0f172a !important;
+}
+
+body.light-theme .hubSearchBox input::placeholder {
+  color: #94a3b8 !important;
+}
+
+body.light-theme .hubSearchBox svg {
+  color: #64748b !important;
+}
+
+/* Order Cards */
+body.light-theme .hubOrderCard {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.05) !important;
+  color: #0f172a !important;
+}
+
+body.light-theme .hubOrderCard:hover {
+  border-color: #cbd5e1 !important;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.08) !important;
+}
+
+body.light-theme .hubOrderCard.orderPacked {
+  background: #f0fdf4 !important;
+  border-color: #86efac !important;
+}
+
+body.light-theme .hubOrderId {
+  color: #0f172a !important;
+}
+
+body.light-theme .hubOrderMethodBadge {
+  background: #e2e8f0 !important;
+  color: #334155 !important;
+}
+
+body.light-theme .hubCustomerSection {
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+body.light-theme .hubCustomerName {
+  color: #0f172a !important;
+}
+
+body.light-theme .hubCustomerName strong {
+  color: #0f172a !important;
+}
+
+body.light-theme .hubCustomerName span {
+  color: #64748b !important;
+}
+
+body.light-theme .hubAddressText {
+  color: #475569 !important;
+}
+
+body.light-theme .hubItemsChecklist {
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+body.light-theme .checklistTitle {
+  color: #0f172a !important;
+}
+
+body.light-theme .checklistItem {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+body.light-theme .checklistItem:hover {
+  background: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+}
+
+body.light-theme .checklistItem.itemChecked {
+  background: #f0fdf4 !important;
+  border-color: #86efac !important;
+}
+
+body.light-theme .checklistItem .itemQty {
+  background: #e0f2fe !important;
+  color: #0284c7 !important;
+}
+
+body.light-theme .checklistItem .itemName {
+  color: #0f172a !important;
+}
+
+body.light-theme .hubStagingRackHint {
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #475569 !important;
+}
+
+body.light-theme .hubStagingRackHint b {
+  color: #0f172a !important;
+}
+
+body.light-theme .hubPrintLabelBtn {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #334155 !important;
+}
+
+body.light-theme .hubPrintLabelBtn:hover {
+  background: #f1f5f9 !important;
+  border-color: #ff3157 !important;
+  color: #0f172a !important;
+}
+
+body.light-theme .hubMarkPackedBtn:not(.readyToVerify) {
+  background: #f1f5f9 !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #64748b !important;
+}
+
+body.light-theme .hubEmptyState {
+  background: #ffffff !important;
+  border: 1px dashed #cbd5e1 !important;
+  color: #64748b !important;
+}
+
+body.light-theme .hubEmptyState h3 {
+  color: #0f172a !important;
+}
+
+body.light-theme .hubEmptyState p {
+  color: #64748b !important;
+}
+
+
+/* ==========================================================================
+   BARCODE SCANNER & HARDWARE WEDGE STYLES
+   ========================================================================== */
+.hubScannerIndicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(56, 189, 248, 0.12);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  color: #38bdf8;
+  padding: 6px 12px;
+  border-radius: 99px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+
+.hubOpenScannerBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: rgba(255, 49, 87, 0.15);
+  border: 1px solid rgba(255, 49, 87, 0.4);
+  color: #ff3157;
+  padding: 7px 14px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.hubOpenScannerBtn:hover {
+  background: #ff3157;
+  color: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(255, 49, 87, 0.35);
+}
+
+.hubLastScannedBanner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  color: #10b981;
+  padding: 8px 16px;
+  border-radius: 10px;
+  margin-bottom: 16px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.hubLastScannedBanner button {
+  background: transparent;
+  border: none;
+  color: #10b981;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+/* Camera Barcode Scanner Modal */
+.hubScannerModalOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 999999;
+  background: rgba(4, 7, 12, 0.85);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.hubScannerModal {
+  background: #0f141d;
+  border: 1px solid #2a3242;
+  border-radius: 18px;
+  width: 100%;
+  max-width: 520px;
+  color: #f8fafc;
+  box-shadow: 0 25px 70px rgba(0, 0, 0, 0.7);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.hubScannerHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  background: #141a24;
+  border-bottom: 1px solid #232a38;
+}
+
+.hubScannerTitleBox {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.hubScannerTitleBox h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 800;
+  color: #fff;
+}
+
+.hubScannerTitleBox p {
+  margin: 2px 0 0;
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.hubScannerCloseBtn {
+  background: #202735;
+  color: #94a3b8;
+  border: none;
+  border-radius: 8px;
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.hubScannerCloseBtn:hover {
+  background: #2a3447;
+  color: #fff;
+}
+
+.hubScannerBody {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.hubScannerViewport {
+  position: relative;
+  background: #000;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 2px solid #2a3242;
+}
+
+.hubScannerReticle {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hubScannerLaser {
+  width: 80%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #ff3157, #ff3157, transparent);
+  box-shadow: 0 0 10px #ff3157;
+  animation: hubLaserSweep 1.8s ease-in-out infinite alternate;
+}
+
+@keyframes hubLaserSweep {
+  0% { transform: translateY(-70px); }
+  100% { transform: translateY(70px); }
+}
+
+.hubHardwareScannerBanner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(56, 189, 248, 0.08);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  border-radius: 10px;
+  padding: 12px 14px;
+  color: #cbd5e1;
+}
+
+.hubHardwareScannerBanner strong {
+  display: block;
+  font-size: 12px;
+  color: #38bdf8;
+  margin-bottom: 2px;
+}
+
+.hubHardwareScannerBanner small {
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.hubScannerManualForm {
+  display: flex;
+  gap: 8px;
+}
+
+.hubScannerManualForm input {
+  flex: 1;
+  background: #090c12;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  padding: 10px 14px;
+  color: #fff;
+  font-size: 13px;
+  outline: none;
+}
+
+.hubScannerManualForm input:focus {
+  border-color: #ff3157;
+}
+
+.hubScannerManualForm button {
+  background: #ff3157;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 18px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.hubScannerManualForm button:hover {
+  background: #ff476b;
+}
+
+.hubScannerErrorBox {
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px dashed rgba(239, 68, 68, 0.4);
+  border-radius: 12px;
+  padding: 24px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.hubScannerErrorBox p {
+  margin: 0;
+  font-size: 12px;
+  color: #f87171;
+  max-width: 320px;
+}
+
+.hubScannerRetryBtn {
+  background: #1e293b;
+  border: 1px solid #334155;
+  color: #f8fafc;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Light Theme Overrides for Scanner */
+body.light-theme .hubScannerModal,
+.light-theme .hubScannerModal {
+  background: #ffffff;
+  border-color: #e2e8f0;
+  color: #0f172a;
+}
+
+body.light-theme .hubScannerHeader,
+.light-theme .hubScannerHeader {
+  background: #f8fafc;
+  border-bottom-color: #e2e8f0;
+}
+
+body.light-theme .hubScannerTitleBox h3,
+.light-theme .hubScannerTitleBox h3 {
+  color: #0f172a;
+}
+
+body.light-theme .hubScannerManualForm input,
+.light-theme .hubScannerManualForm input {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #0f172a;
+}
+
+
+/* ==========================================================================
+   PHONE INSTALL / DOWNLOAD BANNER STYLING
+   ========================================================================== */
+.hubInstallBanner {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 32px);
+  max-width: 520px;
+  background: #0f141d;
+  border: 1px solid #334155;
+  border-radius: 14px;
+  padding: 12px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+  z-index: 99999;
+  animation: hubSlideUp 0.3s ease-out;
+}
+
+@keyframes hubSlideUp {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 20px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+.hubInstallInfo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.hubInstallIcon {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: rgba(255, 49, 87, 0.15);
+  border: 1px solid rgba(255, 49, 87, 0.3);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.hubInstallText {
+  display: flex;
+  flex-direction: column;
+}
+
+.hubInstallText strong {
+  font-size: 13px;
+  color: #fff;
+}
+
+.hubInstallText small {
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.hubInstallActionRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.hubInstallPrimaryBtn {
+  background: #ff3157;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+
+.hubInstallPrimaryBtn:hover {
+  background: #ff476b;
+  transform: translateY(-1px);
+}
+
+.hubInstallDismissBtn {
+  background: #1e293b;
+  color: #94a3b8;
+  border: none;
+  border-radius: 8px;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.hubInstallDismissBtn:hover {
+  background: #334155;
+  color: #fff;
+}
+
+body.light-theme .hubInstallBanner,
+.light-theme .hubInstallBanner {
+  background: #ffffff;
+  border-color: #cbd5e1;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
+}
+
+body.light-theme .hubInstallText strong,
+.light-theme .hubInstallText strong {
+  color: #0f172a;
+}
+
+
+/* ==========================================================================
+   DESKTOP / LAPTOP PHONE QR CARD STYLING
+   ========================================================================== */
+.hubStationLockWrap {
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  gap: 28px;
+  max-width: 960px;
+  width: 100%;
+}
+
+@media (max-width: 768px) {
+  .hubStationLockWrap {
+    flex-direction: column;
+    align-items: center;
+  }
+  .hubDesktopPhoneQrCard {
+    display: none; /* Already on phone! */
+  }
+}
+
+.hubDesktopPhoneQrCard {
+  width: 100%;
+  max-width: 420px;
+  background: #0d121c;
+  border: 1px solid #1e293b;
+  border-radius: 18px;
+  padding: 30px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.4);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.hubPhoneQrHeader {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.hubPhoneQrIconWrap {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: rgba(255, 49, 87, 0.12);
+  border: 1px solid rgba(255, 49, 87, 0.3);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.hubPhoneQrHeader h3 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 800;
+  color: #fff;
+}
+
+.hubPhoneQrHeader p {
+  margin: 3px 0 0;
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+.hubPhoneQrCodeBox {
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 0 auto 20px;
+  border: 2px solid #e2e8f0;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+.hubPhoneQrCodeBox img {
+  width: 170px;
+  height: 170px;
+  display: block;
+}
+
+.hubPhoneQrCodeBox.modal img {
+  width: 200px;
+  height: 200px;
+}
+
+.hubQrLoading {
+  width: 170px;
+  height: 170px;
+  display: grid;
+  place-items: center;
+  color: #64748b;
+  font-size: 12px;
+}
+
+.hubQrScanTip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.hubPhoneBenefitsList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.hubPhoneBenefitItem {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 12.5px;
+  color: #cbd5e1;
+}
+
+.hubCopyLinkBtn {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #cbd5e1;
+  border-radius: 8px;
+  padding: 10px 16px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  transition: all 0.2s;
+  width: 100%;
+}
+
+.hubCopyLinkBtn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.hubOpenPhoneQrBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(56, 189, 248, 0.12);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  color: #38bdf8;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.hubOpenPhoneQrBtn:hover {
+  background: #38bdf8;
+  color: #040810;
+}
+
+/* Light Theme Overrides */
+body.light-theme .hubDesktopPhoneQrCard,
+.light-theme .hubDesktopPhoneQrCard {
+  background: #ffffff;
+  border-color: #cbd5e1;
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.08);
+}
+
+body.light-theme .hubPhoneQrHeader h3,
+.light-theme .hubPhoneQrHeader h3 {
+  color: #0f172a;
+}
+
+body.light-theme .hubPhoneBenefitItem,
+.light-theme .hubPhoneBenefitItem {
+  color: #334155;
+}
+
+body.light-theme .hubCopyLinkBtn,
+.light-theme .hubCopyLinkBtn {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #334155;
+}
+
+body.light-theme .hubCopyLinkBtn:hover,
+.light-theme .hubCopyLinkBtn:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}

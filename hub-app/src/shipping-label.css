@@ -1,0 +1,454 @@
+/* Amazon-Style MotoDC Shipping Label & Dispatch Slip */
+.shippingLabelOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  background: rgba(4, 7, 12, 0.85);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  overflow-y: auto;
+}
+
+.shippingLabelModal {
+  background: #0f141d;
+  border: 1px solid #2a3242;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 640px;
+  color: #f8fafc;
+  box-shadow: 0 25px 70px rgba(0, 0, 0, 0.7);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  margin: auto;
+}
+
+.shippingLabelTopBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 22px;
+  background: #141a24;
+  border-bottom: 1px solid #232a38;
+}
+
+.shippingLabelTopBar h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: #fff;
+}
+
+.shippingLabelActions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.shippingPrintBtn {
+  background: #ff3157;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.shippingPrintBtn:hover {
+  background: #ff4a6e;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 15px rgba(255, 49, 87, 0.4);
+}
+
+.shippingVerifyBtn {
+  background: rgba(34, 197, 94, 0.15);
+  color: #4ade80;
+  border: 1px solid rgba(34, 197, 94, 0.45);
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.shippingVerifyBtn:hover {
+  background: #22c55e;
+  color: #ffffff;
+  border-color: #22c55e;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 15px rgba(34, 197, 94, 0.35);
+}
+
+.shippingStatusBadge.packed {
+  background: rgba(34, 197, 94, 0.12);
+  color: #22c55e;
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.shippingCloseBtn {
+  background: #202735;
+  color: #94a3b8;
+  border: none;
+  border-radius: 8px;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.shippingCloseBtn:hover {
+  background: #2a3447;
+  color: #fff;
+}
+
+/* Printable Physical Label Sheet (Styled like Amazon Shipping Label) */
+.shippingLabelSheet {
+  margin: 20px;
+  background: #ffffff;
+  color: #000000;
+  border: 2px solid #000000;
+  border-radius: 4px;
+  padding: 18px 22px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  box-sizing: border-box;
+}
+
+.labelBrandHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 2px solid #000;
+  padding-bottom: 10px;
+  margin-bottom: 12px;
+}
+
+.labelBrandHeader .brandName {
+  font-size: 24px;
+  font-weight: 900;
+  letter-spacing: -0.5px;
+  color: #000;
+}
+
+.labelBrandHeader .brandName span {
+  color: #ff3157;
+}
+
+.labelServiceBadge {
+  font-size: 11px;
+  font-weight: 900;
+  border: 1.5px solid #000;
+  padding: 4px 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  border-radius: 3px;
+}
+
+/* Dual Barcode & QR Section */
+.labelBarcodeSection {
+  padding: 8px 0 12px;
+  border-bottom: 2px dashed #333;
+}
+
+.labelBarcodeDualWrap {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background: #ffffff;
+}
+
+.labelBarcodeBox {
+  flex: 1;
+  text-align: center;
+  min-width: 0;
+}
+
+.labelBarcodeBox svg {
+  max-width: 100%;
+  height: 56px;
+  display: block;
+  margin: 0 auto;
+}
+
+.labelBarcodeHint {
+  font-size: 10px;
+  font-weight: 700;
+  color: #333;
+  margin-top: 3px;
+  letter-spacing: 0.5px;
+}
+
+.labelQrBox {
+  flex-shrink: 0;
+  text-align: center;
+  border-left: 2px dashed #bbb;
+  padding-left: 14px;
+}
+
+.labelQrBox img {
+  width: 76px;
+  height: 76px;
+  display: block;
+  margin: 0 auto;
+}
+
+.labelQrBox small {
+  display: block;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  margin-top: 2px;
+  color: #000;
+}
+
+/* Address & Info Grid */
+.labelAddressGrid {
+  display: grid;
+  grid-template-columns: 1.6fr 1.2fr;
+  gap: 16px;
+  padding: 14px 0;
+  border-bottom: 2px solid #000;
+}
+
+.labelToBlock h4,
+.labelFromBlock h4 {
+  margin: 0 0 6px;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: #444;
+}
+
+.labelToBlock .recipientName {
+  font-size: 16px;
+  font-weight: 800;
+  margin-bottom: 4px;
+}
+
+.labelToBlock .recipientAddress {
+  font-size: 13px;
+  line-height: 1.4;
+  margin-bottom: 6px;
+  color: #111;
+}
+
+.labelPincodeBox {
+  display: inline-block;
+  font-size: 18px;
+  font-weight: 900;
+  letter-spacing: 1.5px;
+  padding: 4px 10px;
+  border: 2px solid #000;
+  margin-top: 4px;
+  background: #f8fafc;
+}
+
+.labelFromBlock {
+  font-size: 11px;
+  line-height: 1.4;
+  color: #444;
+}
+
+/* Payment Status Box */
+.labelPaymentBanner {
+  margin: 14px 0;
+  padding: 10px 14px;
+  border: 2px solid #000;
+  border-radius: 4px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.labelPaymentBanner.cod {
+  background: #fef3c7;
+  border-color: #d97706;
+}
+
+.labelPaymentBanner.prepaid {
+  background: #f0fdf4;
+  border-color: #16a34a;
+}
+
+.labelPaymentBanner .payType {
+  font-size: 14px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.labelPaymentBanner .payAmount {
+  font-size: 18px;
+  font-weight: 900;
+}
+
+/* Package Contents Mini-manifest */
+.labelItemsTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+  margin: 10px 0;
+}
+
+.labelItemsTable th {
+  border-bottom: 1.5px solid #000;
+  text-align: left;
+  padding: 4px 0;
+  font-weight: 800;
+}
+
+.labelItemsTable td {
+  padding: 5px 0;
+  border-bottom: 1px dotted #ccc;
+}
+
+/* Clean Logistics Footer */
+.labelFooter {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1.5px solid #000;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 10px;
+  font-weight: 700;
+  color: #333;
+  letter-spacing: 0.3px;
+}
+
+/* Print Styles - Guaranteed 1-Page Output */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 8mm 10mm;
+  }
+
+  html,
+  body {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+  }
+
+  /* Completely remove the web app and anything else from layout calculation */
+  #root,
+  header,
+  footer,
+  nav,
+  body > *:not(.shippingLabelOverlay) {
+    display: none !important;
+  }
+
+  /* Unravel modal overlay so it flows as top-level document */
+  .shippingLabelOverlay {
+    position: static !important;
+    inset: auto !important;
+    display: block !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    background: transparent !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: visible !important;
+  }
+
+  .shippingLabelModal {
+    position: static !important;
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    padding: 0 !important;
+    margin: 0 auto !important;
+    overflow: visible !important;
+  }
+
+  .shippingLabelTopBar {
+    display: none !important;
+  }
+
+  .shippingLabelSheet {
+    position: relative !important;
+    width: 100% !important;
+    max-width: 580px !important;
+    margin: 0 auto !important;
+    padding: 14px 18px !important;
+    border: 2px solid #000000 !important;
+    border-radius: 4px !important;
+    box-shadow: none !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    box-sizing: border-box !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+    page-break-before: avoid !important;
+    break-before: avoid !important;
+  }
+
+  .labelBarcodeDualWrap {
+    background: #ffffff !important;
+  }
+
+  .labelBarcodeBox svg {
+    max-width: 100% !important;
+    height: 48px !important;
+  }
+
+  .labelQrBox img {
+    width: 68px !important;
+    height: 68px !important;
+  }
+
+  .labelAddressGrid {
+    padding: 10px 0 !important;
+  }
+
+  .labelPaymentBanner {
+    margin: 10px 0 !important;
+    padding: 8px 12px !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .labelItemsTable {
+    margin: 8px 0 !important;
+  }
+}

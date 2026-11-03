@@ -1,0 +1,16 @@
+{
+  "short_name": "MotoDC Hub",
+  "name": "MotoDC Hub Fulfillment Station",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#090d14",
+  "theme_color": "#090d14",
+  "display": "standalone",
+  "orientation": "any"
+}

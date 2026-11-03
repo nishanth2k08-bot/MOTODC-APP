@@ -1,4 +1,4 @@
-name: Build Android APK
+name: Build Android APKs
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
 
 jobs:
   build:
-    name: Build MotoDC Partner APK
+    name: Build MotoDC Partner & Hub APKs
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -28,33 +28,54 @@ jobs:
           node-version: '22'
           cache: 'npm'
 
-      - name: Install Dependencies
+      - name: Install Partner App Dependencies
         run: npm install
 
-      - name: Build Web Assets
+      - name: Build Partner App Web Assets
         run: npm run build
 
-      - name: Sync Capacitor Android
+      - name: Sync Partner App Capacitor Android
         run: npx cap sync android
 
-      - name: Set gradlew executable
+      - name: Set Partner App gradlew executable
         run: chmod +x ./android/gradlew
 
-      - name: Build Android Debug APK
+      - name: Build Partner App Android Debug APK
         run: |
           cd android
           ./gradlew assembleDebug --no-daemon
 
-      - name: Prepare APK Asset
+      - name: Prepare Partner APK Asset
         run: |
           mkdir -p release-output
           cp android/app/build/outputs/apk/debug/app-debug.apk release-output/MotoDC-Partner.apk
 
-      - name: Upload APK Artifact
+      - name: Install Hub App Dependencies & Build Web Assets
+        run: |
+          cd hub-app
+          npm install
+          npm run build
+          npx cap sync android
+
+      - name: Set Hub App gradlew executable
+        run: chmod +x ./hub-app/android/gradlew
+
+      - name: Build Hub App Android Debug APK
+        run: |
+          cd hub-app/android
+          ./gradlew assembleDebug --no-daemon
+
+      - name: Prepare Hub APK Asset
+        run: |
+          cp hub-app/android/app/build/outputs/apk/debug/app-debug.apk release-output/MotoDC-Hub.apk
+
+      - name: Upload APK Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: MotoDC-Partner-APK
-          path: release-output/MotoDC-Partner.apk
+          name: MotoDC-Android-APKs
+          path: |
+            release-output/MotoDC-Partner.apk
+            release-output/MotoDC-Hub.apk
           retention-days: 30
 
       - name: Create or Update GitHub Release
@@ -62,17 +83,15 @@ jobs:
         if: startsWith(github.ref, 'refs/heads/main')
         with:
           tag_name: v1.0.18
-          name: "MotoDC Partner Android APK (v1.0.18)"
+          name: "MotoDC Android APKs (Partner & Hub v1.0.18)"
           body: |
-            ## 🚀 MotoDC Partner Delivery App (Android APK v1.0.18)
+            ## 🚀 MotoDC Android Apps (Partner & Hub v1.0.18)
             
-            Download and install **MotoDC-Partner.apk** on any Android device.
-            
-            ### Fixes & Enhancements in v1.0.18:
-            * 🛰️ **Resilient Live Route GPS Engine**: Dual-strategy location acquiring (balanced indoor WiFi/cellular + high-precision hardware GPS) with 10-second continuous heartbeat pings sent to Karaikal Hub Admin.
-            * 📍 **Live Radar & Google Maps Tracking on Admin Portal**: Admin roster and Corridor Manifests display active pulsing green GPS badge with last ping time and one-click Google Maps pin tracking.
-            * 📋 **Daily Run Sheet Default Landing**: App opens directly into the Daily Run Sheet with assigned stops.
-            * 📷 **Context-Driven Scanner (Removed Separate Scanner Tab)**: Scanner opens contextually when loading packages at the Hub or scanning barcodes at customer doorsteps, with a quick "Back to Run Sheet" header.
-          files: release-output/MotoDC-Partner.apk
+            Download and install native Android APKs on any Android device:
+            * **MotoDC-Partner.apk**: Dedicated app for delivery riders & couriers with live GPS route heartbeat, runsheet checklist, and doorstep handover verification.
+            * **MotoDC-Hub.apk**: Dedicated warehouse fulfillment app for Karaikal Hub floor staff with high-speed camera barcode scanner, USB/Bluetooth barcode wedge scanner, and corridor rack staging.
+          files: |
+            release-output/MotoDC-Partner.apk
+            release-output/MotoDC-Hub.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
