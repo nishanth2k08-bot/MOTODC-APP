@@ -60,14 +60,7 @@ export default function DailyRunSheet({
   }, [pendingStops]);
 
   // Privacy-First Route GPS Tracking State: Active ONLY after collecting packages at Hub
-  const [isRouteActive, setIsRouteActive] = useState(() => {
-    try {
-      const code = String(rider?.username || rider?.riderId || 'MDC-8586').trim().toUpperCase();
-      return localStorage.getItem('motodc_route_active_' + code) === 'true';
-    } catch {
-      return false;
-    }
-  });
+  const [isRouteActive, setIsRouteActive] = useState(false);
   const [lastGpsCoords, setLastGpsCoords] = useState(null);
 
   const gpsIntervalRef = useRef(null);
@@ -285,9 +278,17 @@ export default function DailyRunSheet({
     });
   };
 
-  // Resume tracking if route was active and stops remain
+  // Safety: If new pending parcels arrive that are not yet scanned at Hub, ensure Route GPS stays off
   useEffect(() => {
-    if (isRouteActive && pendingStops.length > 0) {
+    if (pendingStops.length > 0 && !allHubScanned && isRouteActive) {
+      setIsRouteActive(false);
+      stopGpsWatch();
+    }
+  }, [pendingStops.length, allHubScanned, isRouteActive, stopGpsWatch]);
+
+  // Resume tracking if route was active, all hub parcels are scanned into bag, and stops remain
+  useEffect(() => {
+    if (isRouteActive && pendingStops.length > 0 && allHubScanned) {
       startGpsWatch();
     }
     return () => {

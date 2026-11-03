@@ -113,7 +113,22 @@ export default function App() {
         const storedRaw = localStorage.getItem(storageKey);
         if (storedRaw === null) {
           // First time this device has loaded for this rider session:
-          // Record baseline set of order IDs so the user is NOT spammed upon app entry
+          // If orders are ALREADY assigned to the rider, notify them immediately!
+          if (currentOrderIds.length > 0) {
+            const count = currentOrderIds.length;
+            const previewList = currentOrderIds.slice(0, 2).map((x) => '#' + x).join(', ') + (count > 2 ? '...' : '');
+            sendLocalNotification({
+              id: Math.floor(2000 + Math.random() * 7000),
+              title: `📦 ${count} Package${count > 1 ? 's' : ''} Assigned!`,
+              body: `Admin assigned ${count} parcel(s) to your route (${previewList}). Tap to open run sheet & verify.`,
+              channelId: 'motodc_packages_alerts',
+            });
+            playNotificationChime('package');
+            if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+              try { navigator.vibrate([350, 150, 350]); } catch (_) {}
+            }
+            toast.success(`📦 ${count} package(s) assigned: ${previewList}`, { duration: 6000, icon: '📦' });
+          }
           localStorage.setItem(storageKey, JSON.stringify(currentOrderIds));
           return;
         }
@@ -129,7 +144,7 @@ export default function App() {
         const knownSet = new Set(knownIds);
         const genuinelyNewIds = currentOrderIds.filter((id) => !knownSet.has(id));
 
-        // ONLY fire notification when genuinely NEW packages are added to the rider's run sheet!
+        // Fire notification when genuinely NEW packages are added to the rider's run sheet!
         if (genuinelyNewIds.length > 0) {
           const count = genuinelyNewIds.length;
           const previewList = genuinelyNewIds.slice(0, 2).map((x) => '#' + x).join(', ') + (count > 2 ? '...' : '');
@@ -140,6 +155,9 @@ export default function App() {
             channelId: 'motodc_packages_alerts',
           });
           playNotificationChime('package');
+          if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+            try { navigator.vibrate([350, 150, 350]); } catch (_) {}
+          }
           toast.success(`📦 ${count} new package(s) assigned: ${previewList}`, { duration: 6000, icon: '📦' });
         }
 
@@ -190,6 +208,10 @@ export default function App() {
       localStorage.setItem('motodc_partner_rider', JSON.stringify(riderProfile));
     } catch (_) {}
     cancelNativeShiftAlarms().catch(() => {});
+    initNotifications().catch(() => {});
+    if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission().catch(() => {});
+    }
   };
 
   const handleLogout = async () => {
