@@ -1,7 +1,7 @@
 {
   "name": "motodc-hub-app",
   "private": true,
-  "version": "1.0.1",
+  "version": "1.0.19",
   "type": "module",
   "scripts": {
     "dev": "vite",

@@ -1,10 +1,8 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { collection, onSnapshot, doc, updateDoc, arrayUnion } from 'firebase/firestore';
-import QRCode from 'qrcode';
 import { db } from './firebase';
 import ShippingLabelModal from './ShippingLabelModal';
 import BarcodeScannerModal from './BarcodeScannerModal';
-import InstallPrompt from './InstallPrompt';
 import ThemeToggle from './ThemeToggle';
 import { detectDeliveryZone, CORRIDOR_METADATA } from './corridorUtil';
 import {
@@ -30,7 +28,6 @@ import {
   Volume2,
   Smartphone,
   Copy,
-  QrCode,
   X
 } from 'lucide-react';
 import { Toaster, toast } from 'react-hot-toast';
@@ -83,27 +80,6 @@ export default function App() {
   const [checkedItems, setCheckedItems] = useState({}); // { [orderId_itemIdx]: boolean }
   const [updatingId, setUpdatingId] = useState(null);
   const [lastScannedBarcode, setLastScannedBarcode] = useState('');
-
-  // Phone QR Code Generator (for desktop/laptop staff to open directly on phone)
-  const [hubQrCodeUrl, setHubQrCodeUrl] = useState('');
-  const [showPhoneQrModal, setShowPhoneQrModal] = useState(false);
-
-  useEffect(() => {
-    const hubUrl = typeof window !== 'undefined'
-      ? `${window.location.origin}/hub`
-      : 'https://motodc.in/hub';
-
-    QRCode.toDataURL(hubUrl, {
-      width: 240,
-      margin: 2,
-      color: {
-        dark: '#000000',
-        light: '#ffffff',
-      },
-    })
-      .then((url) => setHubQrCodeUrl(url))
-      .catch((err) => console.warn('QR generation error:', err));
-  }, []);
 
   // Web Audio Context for Chimes and Barcode Beeps
   const audioContextRef = useRef(null);
@@ -411,9 +387,13 @@ export default function App() {
         <div className="hubStationLockWrap">
           <div className="hubStationLockCard">
             <div className="hubStationLogoRow">
-              <Package size={34} color="#ff3157" />
+              <img
+                src="/icon-192.png"
+                alt="MotoDC Hub"
+                style={{ width: 44, height: 44, borderRadius: 10, objectFit: 'cover', boxShadow: '0 4px 14px rgba(255, 49, 87, 0.3)' }}
+              />
               <div>
-                <h2>Moto<span>DC</span> Hub Station</h2>
+                <h2>Moto<span>DC</span> Hub Terminal</h2>
                 <p>Warehouse Fulfillment & Barcode Packing Terminal</p>
               </div>
             </div>
@@ -475,58 +455,6 @@ export default function App() {
               </button>
             </form>
           </div>
-
-          {/* Desktop / Laptop Callout: Open on Phone QR Code */}
-          <div className="hubDesktopPhoneQrCard">
-            <div className="hubPhoneQrHeader">
-              <div className="hubPhoneQrIconWrap">
-                <Smartphone size={24} color="#ff3157" />
-              </div>
-              <div>
-                <h3>Open on Mobile Phone</h3>
-                <p>Use your phone's camera as a barcode scanner</p>
-              </div>
-            </div>
-
-            <div className="hubPhoneQrCodeBox">
-              {hubQrCodeUrl ? (
-                <img src={hubQrCodeUrl} alt="Scan QR Code to open on phone" />
-              ) : (
-                <div className="hubQrLoading">Generating QR Code...</div>
-              )}
-              <div className="hubQrScanTip">
-                <Camera size={14} color="#ff3157" />
-                <span>Scan with Phone Camera or Google Lens</span>
-              </div>
-            </div>
-
-            <div className="hubPhoneBenefitsList">
-              <div className="hubPhoneBenefitItem">
-                <CheckCircle2 size={15} color="#22c55e" />
-                <span>Portable scanning across warehouse racks</span>
-              </div>
-              <div className="hubPhoneBenefitItem">
-                <CheckCircle2 size={15} color="#22c55e" />
-                <span>Auto-focus camera barcode & QR reader</span>
-              </div>
-              <div className="hubPhoneBenefitItem">
-                <CheckCircle2 size={15} color="#22c55e" />
-                <span>Installs directly to phone home screen</span>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              className="hubCopyLinkBtn"
-              onClick={() => {
-                const targetUrl = window.location.origin + '/hub';
-                navigator.clipboard?.writeText(targetUrl);
-                toast.success('Station link copied to clipboard!');
-              }}
-            >
-              <Copy size={13} /> Copy Station Link
-            </button>
-          </div>
         </div>
       </div>
     );
@@ -550,9 +478,11 @@ export default function App() {
       {/* Top Header Row */}
       <header className="hubStationHeader">
         <div className="hubStationBrand">
-          <div className="hubStationLogoBadge">
-            <Package size={22} color="#ff3157" />
-          </div>
+          <img
+            src="/icon-192.png"
+            alt="MotoDC Hub"
+            style={{ width: 38, height: 38, borderRadius: 8, objectFit: 'cover', boxShadow: '0 2px 10px rgba(255, 49, 87, 0.25)' }}
+          />
           <div>
             <h1>Karaikal Hub <span>Fulfillment Station</span></h1>
             <p>Warehouse Packing • Quality Inspection • Parcel Staging Racks</p>
@@ -574,16 +504,6 @@ export default function App() {
             title="Open Camera Barcode Scanner"
           >
             <Camera size={15} /> Barcode Scanner
-          </button>
-
-          {/* Open on Phone QR Code Trigger */}
-          <button
-            type="button"
-            className="hubOpenPhoneQrBtn"
-            onClick={() => setShowPhoneQrModal(true)}
-            title="Scan QR to open on phone"
-          >
-            <Smartphone size={15} /> Open on Phone
           </button>
 
           <div className="hubShiftBadge">
@@ -868,73 +788,6 @@ export default function App() {
         />
       )}
 
-      {/* Phone QR Code Modal */}
-      {showPhoneQrModal && (
-        <div className="hubScannerModalOverlay" onClick={() => setShowPhoneQrModal(false)}>
-          <div className="hubScannerModal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '440px' }}>
-            <div className="hubScannerHeader">
-              <div className="hubScannerTitleBox">
-                <Smartphone size={20} color="#ff3157" />
-                <div>
-                  <h3>Open Hub Station on Phone</h3>
-                  <p>Scan to use your phone's camera as a portable scanner</p>
-                </div>
-              </div>
-              <button
-                type="button"
-                className="hubScannerCloseBtn"
-                onClick={() => setShowPhoneQrModal(false)}
-                aria-label="Close"
-              >
-                <X size={16} />
-              </button>
-            </div>
-
-            <div className="hubScannerBody" style={{ alignItems: 'center', textAlign: 'center' }}>
-              <div className="hubPhoneQrCodeBox modal">
-                {hubQrCodeUrl ? (
-                  <img src={hubQrCodeUrl} alt="Scan QR Code to open on phone" />
-                ) : (
-                  <div className="hubQrLoading">Generating QR Code...</div>
-                )}
-                <div className="hubQrScanTip">
-                  <Camera size={14} color="#ff3157" />
-                  <span>Point phone camera or Google Lens at this QR code</span>
-                </div>
-              </div>
-
-              <p style={{ margin: '0 0 16px', fontSize: '12.5px', color: '#94a3b8', lineHeight: 1.5 }}>
-                Your phone will immediately open the packing terminal. You can walk around the warehouse racks and scan barcodes directly with your phone's camera!
-              </p>
-
-              <div style={{ display: 'flex', gap: '10px', width: '100%' }}>
-                <button
-                  type="button"
-                  className="hubCopyLinkBtn"
-                  style={{ flex: 1 }}
-                  onClick={() => {
-                    const targetUrl = window.location.origin + '/hub';
-                    navigator.clipboard?.writeText(targetUrl);
-                    toast.success('Station link copied to clipboard!');
-                  }}
-                >
-                  <Copy size={13} /> Copy Station Link
-                </button>
-                <button
-                  type="button"
-                  className="hubScannerRetryBtn"
-                  onClick={() => setShowPhoneQrModal(false)}
-                >
-                  Close
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* PWA Phone Download / Install Prompt */}
-      <InstallPrompt />
     </div>
   );
 }
