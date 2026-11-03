@@ -2,7 +2,7 @@ import { LocalNotifications } from '@capacitor/local-notifications';
 import { Geolocation } from '@capacitor/geolocation';
 import React, { useState, useEffect } from 'react';
 import { initNotifications, checkAndNotifyLoginTime, scheduleNativeShiftAlarms, cancelNativeShiftAlarms, sendLocalNotification, playNotificationChime } from './notificationService';
-import { collection, getDocs, updateDoc, doc, arrayUnion, Timestamp } from 'firebase/firestore';
+import { collection, getDocs, updateDoc, doc, arrayUnion, Timestamp, onSnapshot } from 'firebase/firestore';
 import { db } from './firebase';
 import { toast, Toaster } from 'react-hot-toast';
 import {
@@ -88,6 +88,101 @@ export default function App() {
     };
   }, [rider]);
 
+  // Real-Time Global Package Assignment Monitoring (Survives tab switching and background runs)
+  useEffect(() => {
+    if (!rider) return;
+    const riderCode = String(rider.username || rider.riderId || '').trim().toUpperCase();
+    if (!riderCode) return;
+
+    const storageKey = 'motodc_known_assigned_orders_' + riderCode;
+
+    const checkAssignedOrders = async () => {
+      try {
+        const url = `https://motodc-official.vercel.app/api/delivery-partner?action=active-deliveries&riderId=${encodeURIComponent(riderCode)}`;
+        const res = await fetch(url);
+        if (!res.ok) return;
+        const data = await res.json().catch(() => ({}));
+        if (!Array.isArray(data.stops)) return;
+
+        // Current active stop order IDs
+        const currentOrderIds = data.stops
+          .map((s) => String(s.orderId || s.id || '').replace(/^#/, '').trim())
+          .filter(Boolean);
+
+        const storedRaw = localStorage.getItem(storageKey);
+        if (storedRaw === null) {
+          // First time this device has loaded for this rider session:
+          // Record baseline set of order IDs so the user is NOT spammed upon app entry
+          localStorage.setItem(storageKey, JSON.stringify(currentOrderIds));
+          return;
+        }
+
+        let knownIds = [];
+        try {
+          knownIds = JSON.parse(storedRaw);
+          if (!Array.isArray(knownIds)) knownIds = [];
+        } catch (_) {
+          knownIds = [];
+        }
+
+        const knownSet = new Set(knownIds);
+        const genuinelyNewIds = currentOrderIds.filter((id) => !knownSet.has(id));
+
+        // ONLY fire notification when genuinely NEW packages are added to the rider's run sheet!
+        if (genuinelyNewIds.length > 0) {
+          const count = genuinelyNewIds.length;
+          const previewList = genuinelyNewIds.slice(0, 2).map((x) => '#' + x).join(', ') + (count > 2 ? '...' : '');
+          sendLocalNotification({
+            id: Math.floor(2000 + Math.random() * 7000),
+            title: `📦 ${count} New Package${count > 1 ? 's' : ''} Assigned!`,
+            body: `Admin assigned ${count} parcel(s) to your route (${previewList}). Tap to open run sheet & verify.`,
+            channelId: 'motodc_packages_alerts',
+          });
+          playNotificationChime('package');
+          toast.success(`📦 ${count} new package(s) assigned: ${previewList}`, { duration: 6000, icon: '📦' });
+        }
+
+        // Always sync latest assigned order IDs snapshot to localStorage
+        localStorage.setItem(storageKey, JSON.stringify(currentOrderIds));
+      } catch (err) {
+        console.warn('[MotoDC] Background package check failed:', err);
+      }
+    };
+
+    // 1. Check immediately on mount/login
+    checkAssignedOrders();
+
+    // 2. Real-Time Firestore Listener on deliveryCorridors:
+    // When Admin assigns a corridor or clicks auto-dispatch, Firestore updates in sub-second time!
+    let unsubCorridors = null;
+    try {
+      unsubCorridors = onSnapshot(collection(db, 'deliveryCorridors'), () => {
+        checkAssignedOrders();
+      }, (err) => {
+        console.warn('[MotoDC] Corridors listener fallback:', err);
+      });
+    } catch (e) {
+      console.warn('[MotoDC] Could not attach Firestore listener:', e);
+    }
+
+    // 3. Active Background Polling Interval (every 15 seconds while rider is logged in)
+    const pollInterval = setInterval(checkAssignedOrders, 15000);
+
+    // 4. Instant Wakeup Check when app regains visibility / screen turns on
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        checkAssignedOrders();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      if (unsubCorridors) unsubCorridors();
+      clearInterval(pollInterval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [rider]);
+
   const handleLogin = (riderProfile) => {
     setRider(riderProfile);
     try {
@@ -113,6 +208,7 @@ export default function App() {
       try {
         localStorage.removeItem('motodc_partner_rider');
         localStorage.removeItem('motodc_route_active_' + rider?.username);
+        localStorage.removeItem('motodc_known_assigned_orders_' + rider?.username);
       } catch (_) {}
       scheduleNativeShiftAlarms().catch(() => {});
 
@@ -144,6 +240,7 @@ export default function App() {
     try {
       localStorage.removeItem('motodc_partner_rider');
       localStorage.removeItem('motodc_route_active_' + rider?.username);
+      localStorage.removeItem('motodc_known_assigned_orders_' + rider?.username);
     } catch (_) {}
     scheduleNativeShiftAlarms().catch(() => {});
 

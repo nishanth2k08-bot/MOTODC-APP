@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { toast } from 'react-hot-toast';
 import { sendLocalNotification } from '../notificationService';
 import {
+  Camera,
   Package,
   IndianRupee,
   Trash2,
@@ -303,31 +304,11 @@ export default function DailyRunSheet({
           const uncompleted = data.stops.filter((s) => !completedIds.has(String(s.orderId || s.id)));
           setPendingStops(uncompleted);
 
-          // Real-Time Notification: Alert the rider when packages are assigned or updated
+          // In-App Toast Alert if count increases while viewing Run Sheet
           const currentCount = uncompleted.length;
-          if (currentCount > 0) {
-            if (prevCountRef.current !== null && currentCount > prevCountRef.current) {
-              const diff = currentCount - prevCountRef.current;
-              sendLocalNotification({
-                id: Math.floor(1000 + Math.random() * 9000),
-                title: `📦 ${diff} New Package${diff > 1 ? 's' : ''} Assigned!`,
-                body: `You have ${currentCount} total parcel(s) ready for collection at Karaikal Hub${data.corridor?.name ? ` on ${data.corridor.name}` : ''}. Tap to open run sheet.`,
-                channelId: 'motodc_packages_alerts',
-              });
-              toast.success(`📦 ${diff} new package(s) assigned to your run sheet!`, { duration: 6000, icon: '📦' });
-            } else if (prevCountRef.current === null) {
-              const lastAlertKey = 'motodc_last_pkg_alert_' + (rider?.username || 'rider');
-              const lastAlerted = Number(sessionStorage.getItem(lastAlertKey) || 0);
-              if (currentCount !== lastAlerted) {
-                sessionStorage.setItem(lastAlertKey, String(currentCount));
-                sendLocalNotification({
-                  id: Math.floor(1000 + Math.random() * 9000),
-                  title: `📦 Assigned Packages Ready (${currentCount} Parcels)`,
-                  body: `You have ${currentCount} parcel(s) staged for delivery at Karaikal Hub. Collect packages to start your route.`,
-                  channelId: 'motodc_packages_alerts',
-                });
-              }
-            }
+          if (currentCount > 0 && prevCountRef.current !== null && currentCount > prevCountRef.current) {
+            const diff = currentCount - prevCountRef.current;
+            toast.success(`📦 ${diff} new package(s) assigned to your run sheet!`, { duration: 5000, icon: '📦' });
           }
           prevCountRef.current = currentCount;
         }
