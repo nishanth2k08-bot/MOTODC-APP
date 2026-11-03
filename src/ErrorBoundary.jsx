@@ -16,10 +16,14 @@ export default class ErrorBoundary extends React.Component {
 
   handleReload = () => {
     try {
-      localStorage.removeItem('motodc_route_active_MDC-8586');
       if ('caches' in window) {
         caches.keys().then((names) => {
           for (const name of names) caches.delete(name);
+        });
+      }
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then((regs) => {
+          for (const r of regs) r.unregister();
         });
       }
     } catch (_) {}
