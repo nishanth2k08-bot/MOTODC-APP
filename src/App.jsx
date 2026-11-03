@@ -305,9 +305,9 @@ export default function App() {
         }
       }
 
-      if (currentMinutes > cutoffMinutes || currentMinutes < startMinutes) {
-        forceAutoLogoff(`Shift Ended: Your scheduled delivery hours (${rider.shiftLabel || '8:30 AM – 8:30 PM'}) are complete. Automatically signed out.`);
-      }
+      // Update shift active status without forcefully logging out the rider or sending auto-logout alerts
+      const isShiftRunning = currentMinutes >= startMinutes && currentMinutes <= cutoffMinutes;
+      setShiftActive(isShiftRunning);
     };
 
     const interval = setInterval(evaluateShift, 60000);
