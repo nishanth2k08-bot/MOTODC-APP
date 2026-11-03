@@ -61,19 +61,18 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/heads/main')
         with:
-          tag_name: v1.0.17
-          name: "MotoDC Partner Android APK (v1.0.17)"
+          tag_name: v1.0.18
+          name: "MotoDC Partner Android APK (v1.0.18)"
           body: |
-            ## 🚀 MotoDC Partner Delivery App (Android APK v1.0.17)
+            ## 🚀 MotoDC Partner Delivery App (Android APK v1.0.18)
             
             Download and install **MotoDC-Partner.apk** on any Android device.
             
-            ### Fixes & Enhancements in v1.0.17:
-            * 🛠️ **Fixed Scope Error (`isStopScannedAtHub` and `isBatchMode`)**: Resolved missing local variables in DailyRunSheet and App scanner handlers.
-            * 🛠️ **AST Scope Verified**: Entire codebase verified with Babel AST to guarantee zero undeclared variables.
-            * 📦 **Real-Time Background Package Assignment**: Root-level Firestore `onSnapshot` listener and smart diffing so riders receive instant system alerts when admin assigns parcels.
-            * 🔒 **Strict Hub Bag Loading Verification Gate**: Riders must scan 100% of assigned parcels into their delivery bag before departing Karaikal Hub.
-            * 🎯 **Mandatory Doorstep Barcode Scan**: Tapping any assigned stop opens the Barcode Scanner targeted to that specific order. Only an exact barcode match unlocks the customer's 4-digit PIN handover.
+            ### Fixes & Enhancements in v1.0.18:
+            * 🛰️ **Resilient Live Route GPS Engine**: Dual-strategy location acquiring (balanced indoor WiFi/cellular + high-precision hardware GPS) with 10-second continuous heartbeat pings sent to Karaikal Hub Admin.
+            * 📍 **Live Radar & Google Maps Tracking on Admin Portal**: Admin roster and Corridor Manifests display active pulsing green GPS badge with last ping time and one-click Google Maps pin tracking.
+            * 📋 **Daily Run Sheet Default Landing**: App opens directly into the Daily Run Sheet with assigned stops.
+            * 📷 **Context-Driven Scanner (Removed Separate Scanner Tab)**: Scanner opens contextually when loading packages at the Hub or scanning barcodes at customer doorsteps, with a quick "Back to Run Sheet" header.
           files: release-output/MotoDC-Partner.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

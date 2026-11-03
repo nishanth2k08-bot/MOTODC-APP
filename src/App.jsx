@@ -16,7 +16,8 @@ import {
   Moon,
   WifiOff,
   RefreshCw,
-  Zap
+  Zap,
+  ChevronLeft
 } from 'lucide-react';
 import Scanner from './components/Scanner';
 import VerifiedOrder from './components/VerifiedOrder';
@@ -28,7 +29,7 @@ import ChangePassword from './components/ChangePassword';
 const money = (n) => '₹' + Number(n || 0).toLocaleString('en-IN');
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState('scanner'); // 'scanner' | 'runsheet'
+  const [activeTab, setActiveTab] = useState('runsheet'); // Default view: Daily Run Sheet
   const [shiftActive, setShiftActive] = useState(true);
   const [verifiedOrder, setVerifiedOrder] = useState(null);
   const [loadingOrder, setLoadingOrder] = useState(false);
@@ -689,7 +690,9 @@ export default function App() {
   const handleNextScan = () => {
     setDeliveredSuccess(null);
     setVerifiedOrder(null);
-    setActiveTab("scanner");
+    setTargetDoorstepStop(null);
+    setHubScanMode(false);
+    setActiveTab("runsheet");
   };
 
   const handleClearRunSheet = () => {
@@ -787,32 +790,48 @@ export default function App() {
         </div>
       </header>
 
-      {/* Navigation Tabs */}
-      <div className="appTabs">
-        <button
-          type="button"
-          className={`tabBtn ${activeTab === 'scanner' ? 'active' : ''}`}
-          onClick={() => {
-            setTargetDoorstepStop(null);
-            setHubScanMode(false);
-            setActiveTab('scanner');
-          }}
-        >
-          <Camera size={16} /> Scanner
-        </button>
-        <button
-          type="button"
-          className={`tabBtn ${activeTab === 'runsheet' ? 'active' : ''}`}
-          onClick={() => setActiveTab('runsheet')}
-        >
-          <ClipboardList size={16} /> Run Sheet
-          <span className="tabBadge">{runSheet.length}</span>
-        </button>
-      </div>
-
       <main className="mainContainer">
         {activeTab === 'scanner' && (
           <>
+            {/* Contextual Header: Return to Daily Run Sheet */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '10px 14px',
+              background: 'var(--bg-card)',
+              border: '1px solid var(--border)',
+              borderRadius: '10px',
+              marginBottom: '14px'
+            }}>
+              <button
+                type="button"
+                onClick={() => {
+                  setTargetDoorstepStop(null);
+                  setHubScanMode(false);
+                  setVerifiedOrder(null);
+                  setActiveTab('runsheet');
+                }}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  background: 'rgba(255, 255, 255, 0.08)',
+                  color: 'var(--text-primary)',
+                  border: '1px solid var(--border)',
+                  padding: '7px 13px',
+                  borderRadius: '8px',
+                  fontSize: '12px',
+                  fontWeight: 700,
+                  cursor: 'pointer'
+                }}
+              >
+                <ChevronLeft size={16} /> Back to Run Sheet
+              </button>
+              <span style={{ fontSize: '11px', fontWeight: 800, letterSpacing: '0.5px', textTransform: 'uppercase', color: hubScanMode ? '#f59e0b' : '#38bdf8' }}>
+                {hubScanMode ? '📦 Bag Loading Scan' : targetDoorstepStop ? '🎯 Doorstep Handover' : '📷 Barcode Scanner'}
+              </span>
+            </div>
             {/* Shift Summary Bar */}
             <div className="summaryBar">
               <div className="summaryItem">

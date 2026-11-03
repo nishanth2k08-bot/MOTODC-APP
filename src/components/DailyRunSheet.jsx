@@ -1,5 +1,5 @@
 import { Geolocation } from '@capacitor/geolocation';
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { toast } from 'react-hot-toast';
 import { sendLocalNotification } from '../notificationService';
 import {
@@ -62,90 +62,201 @@ export default function DailyRunSheet({
   // Privacy-First Route GPS Tracking State: Active ONLY after collecting packages at Hub
   const [isRouteActive, setIsRouteActive] = useState(() => {
     try {
-      return localStorage.getItem('motodc_route_active_' + rider?.username) === 'true';
+      const code = String(rider?.username || rider?.riderId || 'MDC-8586').trim().toUpperCase();
+      return localStorage.getItem('motodc_route_active_' + code) === 'true';
     } catch {
       return false;
     }
   });
-  const [gpsWatchId, setGpsWatchId] = useState(null);
   const [lastGpsCoords, setLastGpsCoords] = useState(null);
 
-  // Start continuous GPS tracking (Triggered ONLY after package collection at Hub)
-  const startGpsWatch = async () => {
-    let lastSendTime = 0;
+  const gpsIntervalRef = useRef(null);
+  const gpsWatchRef = useRef(null);
+  const isTrackingActiveRef = useRef(false);
 
-    const onLocation = (coords) => {
-      const { latitude, longitude, speed, heading, accuracy } = coords;
-      setLastGpsCoords({
-        lat: latitude,
-        lng: longitude,
-        updatedAt: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-      });
+  // Send coordinates to MotoDC backend API
+  const sendLocationPing = useCallback(async (coords) => {
+    if (!coords || coords.latitude == null || coords.longitude == null) return;
+    const { latitude, longitude, speed, heading, accuracy } = coords;
 
-      const now = Date.now();
-      if (now - lastSendTime >= 10000) {
-        lastSendTime = now;
-        fetch('https://motodc-official.vercel.app/api/delivery-partner?action=update-rider-location', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            riderId: rider?.username || rider?.riderId || 'MDC-R01',
-            riderName: rider?.name || 'MotoDC Partner',
-            lat: latitude,
-            lng: longitude,
-            speed,
-            heading,
-            accuracy,
-          }),
-        }).catch(() => {});
-      }
-    };
+    const formattedTime = new Date().toLocaleTimeString('en-IN', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    });
+
+    setLastGpsCoords({
+      lat: latitude,
+      lng: longitude,
+      accuracy: accuracy || 0,
+      updatedAt: formattedTime,
+    });
+
+    const riderCode = String(rider?.username || rider?.riderId || 'MDC-8586').trim().toUpperCase();
+    const riderName = String(rider?.name || 'MotoDC Partner').trim();
 
     try {
-      // Use native Capacitor Geolocation watcher if available
-      const watchCallbackId = await Geolocation.watchPosition(
-        { enableHighAccuracy: true, timeout: 15000, maximumAge: 5000 },
-        (position, err) => {
-          if (position?.coords) {
-            onLocation(position.coords);
-          }
-        }
-      );
-      setGpsWatchId(watchCallbackId);
-      return;
-    } catch (capErr) {
-      console.warn('Capacitor watchPosition fallback:', capErr);
+      await fetch('https://motodc-official.vercel.app/api/delivery-partner?action=update-rider-location', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          riderId: riderCode,
+          riderName: riderName,
+          lat: latitude,
+          lng: longitude,
+          speed: Number(speed || 0),
+          heading: Number(heading || 0),
+          accuracy: Number(accuracy || 0),
+          isGpsActive: true,
+        }),
+      });
+    } catch (err) {
+      console.warn('[GPS Engine] Transmit warning:', err);
     }
+  }, [rider]);
 
-    // Web Fallback
+  // Acquire current location using fastest & most reliable method
+  const acquirePosition = useCallback(async () => {
+    // Strategy 1: Capacitor Native with Balanced Accuracy (fastest indoor/outdoor fix)
+    try {
+      const pos = await Geolocation.getCurrentPosition({
+        enableHighAccuracy: false,
+        timeout: 6000,
+        maximumAge: 30000,
+      });
+      if (pos?.coords?.latitude != null) return pos.coords;
+    } catch (_) {}
+
+    // Strategy 2: Capacitor Native with High Accuracy (GPS hardware fix)
+    try {
+      const pos = await Geolocation.getCurrentPosition({
+        enableHighAccuracy: true,
+        timeout: 8000,
+        maximumAge: 10000,
+      });
+      if (pos?.coords?.latitude != null) return pos.coords;
+    } catch (_) {}
+
+    // Strategy 3: Standard Web Geolocation API fallback
     if (typeof window !== 'undefined' && navigator.geolocation) {
-      const id = navigator.geolocation.watchPosition(
-        (pos) => onLocation(pos.coords),
-        (err) => console.warn('GPS location tracking error:', err),
-        { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 }
-      );
-      setGpsWatchId(id);
-    }
-  };
-
-  // Stop GPS tracking (Immediately terminates when returning to Hub or completing shift)
-  const stopGpsWatch = async () => {
-    if (gpsWatchId != null) {
       try {
-        if (typeof gpsWatchId === 'string') {
-          await Geolocation.clearWatch({ id: gpsWatchId });
+        const coords = await new Promise((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(
+            (p) => resolve(p.coords),
+            (err) => reject(err),
+            { enableHighAccuracy: false, timeout: 6000, maximumAge: 30000 }
+          );
+        });
+        if (coords?.latitude != null) return coords;
+      } catch (_) {}
+    }
+
+    return null;
+  }, []);
+
+  // Ensure Location Permissions on Android & Web
+  const ensureGpsPermissions = useCallback(async () => {
+    try {
+      let perm = await Geolocation.checkPermissions().catch(() => null);
+      if (!perm || (perm.location !== 'granted' && perm.coarseLocation !== 'granted')) {
+        perm = await Geolocation.requestPermissions({ permissions: ['location'] }).catch(() => null);
+      }
+      return Boolean(perm && (perm.location === 'granted' || perm.coarseLocation === 'granted'));
+    } catch (_) {
+      return true;
+    }
+  }, []);
+
+  // Start Continuous Resilient GPS Heartbeat & Watcher
+  const startGpsWatch = useCallback(async () => {
+    isTrackingActiveRef.current = true;
+
+    // 1. Check / request permissions
+    await ensureGpsPermissions();
+
+    // 2. Transmit immediate fix right away
+    const initialCoords = await acquirePosition();
+    if (initialCoords) {
+      await sendLocationPing(initialCoords);
+    }
+
+    // 3. Setup Heartbeat Interval (Every 10 seconds while on route)
+    if (gpsIntervalRef.current) {
+      clearInterval(gpsIntervalRef.current);
+    }
+    gpsIntervalRef.current = setInterval(async () => {
+      if (!isTrackingActiveRef.current) return;
+      const coords = await acquirePosition();
+      if (coords) {
+        await sendLocationPing(coords);
+      }
+    }, 10000);
+
+    // 4. Setup Native Watcher for instantaneous movement/speed updates
+    if (!gpsWatchRef.current) {
+      try {
+        const watchId = await Geolocation.watchPosition(
+          { enableHighAccuracy: true, timeout: 15000, maximumAge: 5000 },
+          (pos) => {
+            if (pos?.coords) {
+              sendLocationPing(pos.coords);
+            }
+          }
+        );
+        gpsWatchRef.current = watchId;
+      } catch (capErr) {
+        if (typeof window !== 'undefined' && navigator.geolocation) {
+          const webWatchId = navigator.geolocation.watchPosition(
+            (pos) => sendLocationPing(pos.coords),
+            () => {},
+            { enableHighAccuracy: false, maximumAge: 5000, timeout: 15000 }
+          );
+          gpsWatchRef.current = webWatchId;
+        }
+      }
+    }
+  }, [acquirePosition, ensureGpsPermissions, sendLocationPing]);
+
+  // Stop GPS Tracking (Immediately ceases pings upon returning to Hub)
+  const stopGpsWatch = useCallback(async () => {
+    isTrackingActiveRef.current = false;
+
+    if (gpsIntervalRef.current) {
+      clearInterval(gpsIntervalRef.current);
+      gpsIntervalRef.current = null;
+    }
+
+    if (gpsWatchRef.current) {
+      try {
+        if (typeof gpsWatchRef.current === 'string') {
+          await Geolocation.clearWatch({ id: gpsWatchRef.current });
         } else if (navigator.geolocation) {
-          navigator.geolocation.clearWatch(gpsWatchId);
+          navigator.geolocation.clearWatch(gpsWatchRef.current);
         }
       } catch (_) {}
-      setGpsWatchId(null);
+      gpsWatchRef.current = null;
     }
+
     setIsRouteActive(false);
+    const riderCode = String(rider?.username || rider?.riderId || 'MDC-8586').trim().toUpperCase();
     try {
-      localStorage.removeItem('motodc_route_active_' + rider?.username);
+      localStorage.removeItem('motodc_route_active_' + riderCode);
     } catch (_) {}
+
+    // Tell backend route is paused
+    try {
+      fetch('https://motodc-official.vercel.app/api/delivery-partner?action=update-rider-location', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          riderId: riderCode,
+          isGpsActive: false,
+        }),
+      }).catch(() => {});
+    } catch (_) {}
+
     toast('Live GPS Tracking paused. Returned to Karaikal Hub.', { icon: '🛑' });
-  };
+  }, [rider]);
 
   // Package Collection & Native Android GPS Permission Request at Hub Station
   const handleDepartHubWithPackages = async () => {
@@ -157,128 +268,52 @@ export default function DailyRunSheet({
       return;
     }
 
-    toast.loading('Checking GPS & Location Permissions...', { id: 'gps-start' });
+    toast.loading('Activating Live Route GPS & Connecting to Radar...', { id: 'gps-start' });
 
-    // Step 1: Check / Request Permissions via Capacitor Native
-    let isPermitted = false;
+    setIsRouteActive(true);
+    const riderCode = String(rider?.username || rider?.riderId || 'MDC-8586').trim().toUpperCase();
     try {
-      let perm = await Geolocation.checkPermissions().catch(() => null);
-      if (!perm || (perm.location !== 'granted' && perm.coarseLocation !== 'granted')) {
-        perm = await Geolocation.requestPermissions({ permissions: ['location'] }).catch(() => null);
-      }
-      if (perm && (perm.location === 'granted' || perm.coarseLocation === 'granted')) {
-        isPermitted = true;
-      }
-    } catch (permErr) {
-      console.warn('Capacitor permission check:', permErr);
-    }
+      localStorage.setItem('motodc_route_active_' + riderCode, 'true');
+    } catch (_) {}
 
-    // If permission was granted (or user tapped Allow):
-    if (isPermitted) {
-      setIsRouteActive(true);
-      try {
-        localStorage.setItem('motodc_route_active_' + rider?.username, 'true');
-      } catch (_) {}
+    await startGpsWatch();
 
-      toast.success('Packages Checked Out! Route GPS Activated.', {
-        id: 'gps-start',
-        icon: '🏍️',
-        duration: 4000,
-      });
-
-      // Try initial position asynchronously (non-blocking)
-      Geolocation.getCurrentPosition({ enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 })
-        .then((pos) => {
-          if (pos?.coords) {
-            setLastGpsCoords({
-              lat: pos.coords.latitude,
-              lng: pos.coords.longitude,
-              updatedAt: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-            });
-          }
-        })
-        .catch((posErr) => {
-          console.warn('Initial GPS fix warning:', posErr);
-          const msg = String(posErr?.message || '').toLowerCase();
-          if (msg.includes('location services') || msg.includes('disabled') || msg.includes('provider')) {
-            toast('Please pull down your notification bar & turn ON device Location (GPS).', {
-              icon: '📍',
-              duration: 7000,
-            });
-          }
-        });
-
-      startGpsWatch();
-      return;
-    }
-
-    // Step 2: Web Geolocation Fallback
-    if (typeof window !== 'undefined' && navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          setIsRouteActive(true);
-          try {
-            localStorage.setItem('motodc_route_active_' + rider?.username, 'true');
-          } catch (_) {}
-          toast.success('Packages Checked Out! Live Route GPS active.', {
-            id: 'gps-start',
-            icon: '🏍️',
-            duration: 4000,
-          });
-          setLastGpsCoords({
-            lat: pos.coords.latitude,
-            lng: pos.coords.longitude,
-            updatedAt: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-          });
-          startGpsWatch();
-        },
-        (err) => {
-          if (err.code === 1) { // PERMISSION_DENIED
-            toast.error('Location permission was denied. Please allow location in App Settings.', { id: 'gps-start', duration: 5000 });
-          } else {
-            // Position unavailable or timeout (GPS toggle might be off, but permission was given)
-            setIsRouteActive(true);
-            try {
-              localStorage.setItem('motodc_route_active_' + rider?.username, 'true');
-            } catch (_) {}
-            toast.success('Packages Checked Out! Turn ON your phone Location (GPS) toggle.', {
-              id: 'gps-start',
-              icon: '📍',
-              duration: 6000,
-            });
-            startGpsWatch();
-          }
-        },
-        { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 }
-      );
-    } else {
-      // Still activate route so driver isn't stuck
-      setIsRouteActive(true);
-      try {
-        localStorage.setItem('motodc_route_active_' + rider?.username, 'true');
-      } catch (_) {}
-      toast('Packages Checked Out. Route active in offline tracking mode.', { id: 'gps-start', icon: '📦' });
-    }
+    toast.success('Packages Checked Out! Live Route GPS Active.', {
+      id: 'gps-start',
+      icon: '🏍️',
+      duration: 4000,
+    });
   };
 
   // Resume tracking if route was active and stops remain
   useEffect(() => {
-    if (isRouteActive && pendingStops.length > 0 && gpsWatchId == null) {
+    if (isRouteActive && pendingStops.length > 0) {
       startGpsWatch();
     }
     return () => {
-      if (gpsWatchId != null && navigator.geolocation) {
-        navigator.geolocation.clearWatch(gpsWatchId);
+      if (gpsIntervalRef.current) {
+        clearInterval(gpsIntervalRef.current);
+        gpsIntervalRef.current = null;
+      }
+      if (gpsWatchRef.current) {
+        try {
+          if (typeof gpsWatchRef.current === 'string') {
+            Geolocation.clearWatch({ id: gpsWatchRef.current });
+          } else if (navigator.geolocation) {
+            navigator.geolocation.clearWatch(gpsWatchRef.current);
+          }
+        } catch (_) {}
+        gpsWatchRef.current = null;
       }
     };
-  }, [isRouteActive, pendingStops.length]);
+  }, [isRouteActive, pendingStops.length, startGpsWatch]);
 
   // Terminate GPS tracking immediately once all deliveries are complete
   useEffect(() => {
     if (pendingStops.length === 0 && isRouteActive) {
       stopGpsWatch();
     }
-  }, [pendingStops.length, isRouteActive]);
+  }, [pendingStops.length, isRouteActive, stopGpsWatch]);
 
   // Fetch pending stops from live backend (scoped by riderId for Solution A)
   const fetchPendingStops = async () => {
@@ -597,7 +632,9 @@ export default function DailyRunSheet({
               <ShieldCheck size={14} /> Live Route GPS Active (Customer Radar On)
             </span>
             <span style={{ fontSize: '10px', color: '#86efac' }}>
-              {lastGpsCoords?.updatedAt ? `Last ping: ${lastGpsCoords.updatedAt}` : 'Transmitting encrypted pings to customers'}
+              {lastGpsCoords?.updatedAt
+                ? `Live Ping: ${lastGpsCoords.updatedAt}${lastGpsCoords.accuracy ? ` • Acc: ${Math.round(lastGpsCoords.accuracy)}m` : ''}`
+                : 'Connecting to GPS radar & transmitting pings...'}
             </span>
           </div>
           <button
