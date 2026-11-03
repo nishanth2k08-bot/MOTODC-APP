@@ -500,7 +500,7 @@ export default function App() {
     }
 
     setLoadingOrder(true);
-    if (!isBatchMode) {
+    if (!hubScanMode) {
       setVerifiedOrder(null);
     }
     setDeliveredSuccess(null);

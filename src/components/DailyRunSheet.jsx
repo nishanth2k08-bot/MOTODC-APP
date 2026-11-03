@@ -712,6 +712,8 @@ export default function DailyRunSheet({
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               {pendingStops.map((stop, index) => {
+                const stopId = String(stop.orderId || stop.id || '');
+                const isStopScannedAtHub = hubScannedIds.includes(stopId);
                 const isCod = String(stop.paymentMethod || '').toLowerCase() === 'cod';
                 const fullAddress = [stop.shipping?.address, stop.shipping?.city, stop.shipping?.pincode]
                   .filter(Boolean)
