@@ -203,9 +203,19 @@ export default function App() {
   }, [rider]);
 
   const handleLogin = (riderProfile) => {
-    setRider(riderProfile);
+    const now = new Date();
+    const utcMillis = now.getTime() + now.getTimezoneOffset() * 60000;
+    const istDate = new Date(utcMillis + 330 * 60000);
+    const loggedInAtMinutes = istDate.getHours() * 60 + istDate.getMinutes();
+
+    const profileWithTimestamp = {
+      ...riderProfile,
+      loggedInAtMinutes,
+    };
+
+    setRider(profileWithTimestamp);
     try {
-      localStorage.setItem('motodc_partner_rider', JSON.stringify(riderProfile));
+      localStorage.setItem('motodc_partner_rider', JSON.stringify(profileWithTimestamp));
     } catch (_) {}
     cancelNativeShiftAlarms().catch(() => {});
     initNotifications().catch(() => {});
@@ -278,18 +288,29 @@ export default function App() {
     toast.error(reason || 'Shift ended. Automatically logged off.', { duration: 8000, icon: '⏰' });
   };
 
-  // Strict Shift Monitor: Automatically logs off rider when shift ends
+  // Strict Shift Monitor: Automatically logs off rider at scheduled shift end cutoff time
   useEffect(() => {
     if (!rider) return;
 
-    const evaluateShift = () => {
+    let cutoffTimer = null;
+
+    const checkShiftCutoff = (isInitialMount = false) => {
       const now = new Date();
       const utcMillis = now.getTime() + now.getTimezoneOffset() * 60000;
       const istDate = new Date(utcMillis + 330 * 60000);
       const currentMinutes = istDate.getHours() * 60 + istDate.getMinutes();
+      const currentSeconds = istDate.getSeconds();
 
       const cutoffMinutes = rider.shiftEndMinutes || (rider.serviceMode === 'Power Rider' ? 1290 : 1230);
       const startMinutes = rider.shiftStartMinutes || (rider.serviceMode === 'Power Rider' ? 480 : 510);
+      const shiftEndStr = rider.shiftLabel
+        ? rider.shiftLabel.split('–')[1]?.trim()
+        : cutoffMinutes === 1290
+        ? '9:30 PM'
+        : '8:30 PM';
+
+      const isShiftRunning = currentMinutes >= startMinutes && currentMinutes < cutoffMinutes;
+      setShiftActive(isShiftRunning);
 
       // Advance warning 15 minutes before shift end (e.g. 8:15 PM)
       if (currentMinutes === cutoffMinutes - 15) {
@@ -299,20 +320,68 @@ export default function App() {
           sendLocalNotification({
             id: 9919,
             title: '⚠️ Shift Ending in 15 Minutes',
-            body: `Your shift concludes at ${rider.shiftLabel ? rider.shiftLabel.split('–')[1]?.trim() : '8:30 PM'}. Wrap up active deliveries and head back to Karaikal Hub.`,
+            body: `Your shift concludes at ${shiftEndStr}. Wrap up active deliveries and head back to Karaikal Hub.`,
             channelId: 'motodc_shift_alerts',
           });
         }
       }
 
-      // Update shift active status without forcefully logging out the rider or sending auto-logout alerts
-      const isShiftRunning = currentMinutes >= startMinutes && currentMinutes <= cutoffMinutes;
-      setShiftActive(isShiftRunning);
+      // Check if scheduled shift end cutoff time has been reached:
+      if (currentMinutes >= cutoffMinutes) {
+        const todayStr = istDate.toISOString().slice(0, 10);
+        const autoLoggedOffKey = `motodc_shift_autologoff_done_${rider.username}_${todayStr}`;
+
+        if (isInitialMount) {
+          // If the app was opened when it was ALREADY past the scheduled cutoff (e.g. cold open at 9:00 PM),
+          // check if rider logged in after hours deliberately
+          const loggedInAtMinutes = rider.loggedInAtMinutes;
+          if (loggedInAtMinutes && loggedInAtMinutes >= cutoffMinutes) {
+            // Rider signed in after hours intentionally for overtime or testing; keep session active
+            return;
+          }
+
+          // Otherwise, quietly clear expired daytime session without notification spam upon opening
+          setRider(null);
+          try {
+            localStorage.removeItem('motodc_partner_rider');
+            localStorage.removeItem('motodc_route_active_' + rider?.username);
+            localStorage.removeItem('motodc_known_assigned_orders_' + rider?.username);
+          } catch (_) {}
+          scheduleNativeShiftAlarms().catch(() => {});
+          return;
+        }
+
+        // When the clock transitions and hits the scheduled timing while the rider is on shift:
+        if (!sessionStorage.getItem(autoLoggedOffKey)) {
+          sessionStorage.setItem(autoLoggedOffKey, 'true');
+          forceAutoLogoff(
+            `Shift Concluded: Your scheduled delivery hours (${shiftEndStr}) have ended. Shift attendance is recorded at Karaikal Hub.`
+          );
+        }
+        return;
+      }
+
+      // If shift is still active, schedule exact high-precision countdown timer to the scheduled cutoff time!
+      const minutesRemaining = cutoffMinutes - currentMinutes;
+      const msRemaining = (minutesRemaining * 60 - currentSeconds) * 1000;
+      if (msRemaining > 0 && msRemaining < 86400000) {
+        if (cutoffTimer) clearTimeout(cutoffTimer);
+        cutoffTimer = setTimeout(() => {
+          checkShiftCutoff(false);
+        }, msRemaining);
+      }
     };
 
-    const interval = setInterval(evaluateShift, 60000);
-    evaluateShift();
-    return () => clearInterval(interval);
+    // Run initial check on mount
+    checkShiftCutoff(true);
+
+    // Heartbeat check every 15 seconds to catch transitions reliably
+    const interval = setInterval(() => checkShiftCutoff(false), 15000);
+
+    return () => {
+      clearInterval(interval);
+      if (cutoffTimer) clearTimeout(cutoffTimer);
+    };
   }, [rider]);
 
   // Run sheet persistence
