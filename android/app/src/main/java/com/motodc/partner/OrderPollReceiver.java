@@ -38,11 +38,15 @@ public class OrderPollReceiver extends BroadcastReceiver {
     private static final String KEY_RIDER_ID = "rider_id";
     private static final String KEY_RIDER_USERNAME = "rider_username";
     private static final String KEY_NOTIFIED_ORDERS = "notified_order_ids";
-    private static final String CHANNEL_ID = "motodc_dispatch_channel_v3";
+    private static final String CHANNEL_ID = "motodc_dispatch_alerts_v4";
     private static final int POLL_INTERVAL_MS = 25000; // 25 seconds
 
     @Override
     public void onReceive(Context context, Intent intent) {
+        checkOrdersInBackground(context);
+    }
+
+    public static void checkOrdersInBackground(Context context) {
         SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         String riderId = prefs.getString(KEY_RIDER_ID, "");
         String username = prefs.getString(KEY_RIDER_USERNAME, "");
@@ -171,7 +175,7 @@ public class OrderPollReceiver extends BroadcastReceiver {
                 Uri soundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
                 AudioAttributes audioAttributes = new AudioAttributes.Builder()
                         .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                        .setUsage(AudioAttributes.USAGE_NOTIFICATION_COMMUNICATION_URGENT)
+                        .setUsage(AudioAttributes.USAGE_NOTIFICATION)
                         .build();
                 channel.setSound(soundUri, audioAttributes);
 
@@ -212,6 +216,7 @@ public class OrderPollReceiver extends BroadcastReceiver {
                 .putString(KEY_RIDER_ID, riderId)
                 .apply();
 
+        checkOrdersInBackground(context);
         scheduleNextPoll(context);
     }
 
