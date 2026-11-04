@@ -1,10 +1,31 @@
 /* ==========================================================================
+   Full-Bleed Dark Theme Reset (Prevents Any White Gaps/Margins in WebViews)
+   ========================================================================== */
+html, body, #root {
+  margin: 0 !important;
+  padding: 0 !important;
+  width: 100% !important;
+  min-height: 100vh !important;
+  background: #090c12 !important;
+  background-color: #090c12 !important;
+  color: #f1f5f9;
+  box-sizing: border-box;
+  -webkit-font-smoothing: antialiased;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+/* ==========================================================================
    Karaikal Hub Fulfillment & Packing Station Styling
    ========================================================================== */
 .hubStationContainer {
-  min-height: calc(100vh - 80px);
-  padding: 20px 24px 60px;
-  background: #090c12;
+  min-height: 100vh;
+  width: 100%;
+  padding: 16px 16px 48px;
+  background: #090c12 !important;
+  background-color: #090c12 !important;
   color: #f1f5f9;
   font-family: inherit;
   box-sizing: border-box;
@@ -18,21 +39,27 @@
 
 /* Lock Screen */
 .hubStationLockScreen {
-  min-height: 80vh;
+  min-height: 100vh;
+  width: 100%;
+  background: #090c12 !important;
+  background-color: #090c12 !important;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 20px;
+  padding: 16px;
+  margin: 0;
+  box-sizing: border-box;
 }
 
 .hubStationLockCard {
   width: 100%;
-  max-width: 480px;
+  max-width: 440px;
   background: #0d121c;
   border: 1px solid #1e293b;
   border-radius: 18px;
-  padding: 32px;
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.4);
+  padding: 28px 22px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.6);
+  box-sizing: border-box;
 }
 
 .hubStationLogoRow {
@@ -221,14 +248,14 @@
 }
 
 .hubBrandText h1 {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 800;
   margin: 0;
   color: #fff;
-  line-height: 1.2;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  line-height: 1.25;
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
 }
 
 .hubBrandText h1 span {
@@ -239,9 +266,8 @@
   margin: 2px 0 0;
   font-size: 11px;
   color: #94a3b8;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: normal;
+  overflow: visible;
 }
 
 .hubHeaderQuickActions {
@@ -1932,4 +1958,43 @@ body.light-theme .hubLabelBtn,
   background: #f1f5f9 !important;
   border-color: #cbd5e1 !important;
   color: #0f172a !important;
+}
+
+
+/* Tab Title Responsive Visibility */
+.hubTabTitleShort {
+  display: none;
+}
+.hubTabTitleFull {
+  display: inline;
+}
+
+@media (max-width: 640px) {
+  .hubTabTitleFull {
+    display: none !important;
+  }
+  .hubTabTitleShort {
+    display: inline !important;
+  }
+  .hubTabGroup,
+  .hubTabs {
+    display: flex !important;
+    gap: 6px !important;
+    width: 100% !important;
+    overflow-x: visible !important;
+  }
+  .hubTabBtn,
+  .hubTabs button {
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+    padding: 10px 4px !important;
+    font-size: 12px !important;
+    gap: 4px !important;
+    justify-content: center !important;
+    white-space: nowrap !important;
+  }
+  .hubTabCount {
+    padding: 2px 5px !important;
+    font-size: 11px !important;
+  }
 }

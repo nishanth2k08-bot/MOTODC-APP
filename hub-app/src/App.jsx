@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { collection, onSnapshot, doc, updateDoc, arrayUnion } from 'firebase/firestore';
 import { db } from './firebase';
 import ShippingLabelModal from './ShippingLabelModal';
@@ -139,9 +139,9 @@ export default function App() {
       const shiftEnded = isShiftCompleted();
       if (shiftEnded) {
         setAfterHoursOverride(true);
-        toast('Overtime / After-Hours Access Unlocked (Shift ended at 8:30 PM)', { icon: 'âš ï¸', duration: 5000 });
+        toast('Overtime / After-Hours Access Unlocked (Shift ended at 8:30 PM)', { icon: '⚠️', duration: 5000 });
       } else {
-        toast.success('Station Unlocked â€¢ Karaikal Hub Packing Terminal Active');
+        toast.success('Station Unlocked • Karaikal Hub Packing Terminal Active');
       }
       setStationAuth(true);
       setPinError('');
@@ -160,7 +160,7 @@ export default function App() {
     try {
       localStorage.removeItem('motodc_hub_auth');
     } catch (_) {}
-    toast('Station locked', { icon: 'ðŸ”’' });
+    toast('Station locked', { icon: '🔒' });
   };
 
   // Real-Time Sync with Firestore Orders
@@ -177,7 +177,7 @@ export default function App() {
       const docs = snap.docs.map((d) => ({ ...d.data(), id: d.id, collectionType: 'cod orders', paymentMethod: 'cod' }));
       if (!initialLoad && docs.length > codOrders.length) {
         playChime();
-        toast('New order received for packing!', { icon: 'ðŸ“¦' });
+        toast('New order received for packing!', { icon: '📦' });
       }
       setCodOrders(docs);
       setLoading(false);
@@ -190,7 +190,7 @@ export default function App() {
       const docs = snap.docs.map((d) => ({ ...d.data(), id: d.id, collectionType: 'online orders', paymentMethod: 'online' }));
       if (!initialLoad && docs.length > onlineOrders.length) {
         playChime();
-        toast('New order received for packing!', { icon: 'ðŸ“¦' });
+        toast('New order received for packing!', { icon: '📦' });
       }
       setOnlineOrders(docs);
       setLoading(false);
@@ -272,8 +272,8 @@ export default function App() {
     });
 
     if (matched) {
-      toast.success(`ðŸ“¦ Barcode Matched: Order #${matched.orderId || matched.id}`, {
-        icon: 'âš¡',
+      toast.success(`📦 Barcode Matched: Order #${matched.orderId || matched.id}`, {
+        icon: '⚡',
         duration: 4000,
       });
       // Automatically switch to correct tab and open label modal
@@ -366,9 +366,9 @@ export default function App() {
       });
 
       playChime();
-      toast.success(`âœ… Order #${order.orderId || order.id} Packed & Staged into ${order.corridorMeta.name}!`, {
+      toast.success(`✅ Order #${order.orderId || order.id} Packed & Staged into ${order.corridorMeta.name}!`, {
         duration: 5000,
-        icon: 'ðŸ“¦',
+        icon: '📦',
       });
     } catch (err) {
       console.error('Mark packed error:', err);
@@ -442,7 +442,7 @@ export default function App() {
                   pattern="[0-9]*"
                   maxLength={4}
                   autoComplete="one-time-code"
-                  placeholder="â€¢â€¢â€¢â€¢"
+                  placeholder=""
                   value={pinInput}
                   onChange={(e) => {
                     const clean = e.target.value.replace(/\D/g, '').slice(0, 4);
@@ -557,7 +557,8 @@ export default function App() {
             onClick={() => setActiveTab('pending')}
           >
             <Clock size={15} />
-            <span>Awaiting Packing</span>
+            <span className="hubTabTitleFull">Awaiting Packing</span>
+            <span className="hubTabTitleShort">Awaiting</span>
             <span className="hubTabCount">{pendingCount}</span>
           </button>
           <button
@@ -568,7 +569,8 @@ export default function App() {
             onClick={() => setActiveTab('packed')}
           >
             <CheckCircle2 size={15} />
-            <span>Packed & Staged</span>
+            <span className="hubTabTitleFull">Packed & Staged</span>
+            <span className="hubTabTitleShort">Packed</span>
             <span className="hubTabCount">{packedCount}</span>
           </button>
           <button
@@ -579,7 +581,8 @@ export default function App() {
             onClick={() => setActiveTab('in_transit')}
           >
             <Truck size={15} />
-            <span>In Transit</span>
+            <span className="hubTabTitleFull">In Transit</span>
+            <span className="hubTabTitleShort">Transit</span>
             <span className="hubTabCount">{inTransitCount}</span>
           </button>
         </div>
@@ -631,7 +634,7 @@ export default function App() {
         <div className="hubLastScannedBanner">
           <Barcode size={16} />
           <span>Last Barcode Input: <strong>{lastScannedBarcode}</strong></span>
-          <button type="button" onClick={() => setLastScannedBarcode('')}>âœ•</button>
+          <button type="button" onClick={() => setLastScannedBarcode('')}>✕</button>
         </div>
       )}
 
@@ -679,7 +682,7 @@ export default function App() {
                         #{order.orderId || order.id}
                       </div>
                       <span className="hubPaymentTag">
-                        {order.paymentMethod === 'cod' ? 'ðŸ’µ COD' : 'ðŸ’³ Prepaid (Paid)'}
+                        {order.paymentMethod === 'cod' ? '💵 COD' : '💳 Prepaid (Paid)'}
                       </span>
                     </div>
 
@@ -693,7 +696,7 @@ export default function App() {
                       }}
                     >
                       <MapPin size={12} />
-                      <span>{order.corridorMeta.code} Â· {order.corridorMeta.name}</span>
+                      <span>{order.corridorMeta.code} • {order.corridorMeta.name}</span>
                     </div>
                   </div>
 
@@ -745,7 +748,7 @@ export default function App() {
                               <span className="hubItemName">{item.name}</span>
                               <span className="hubItemMeta">
                                 Qty: <strong>{item.qty || 1}</strong>
-                                {item.variant ? ` â€¢ ${item.variant}` : ''}
+                                {item.variant ? ` • ${item.variant}` : ''}
                               </span>
                             </div>
                           </div>
@@ -789,14 +792,14 @@ export default function App() {
                     {isPacked && (
                       <div className="hubStatusConfirmedBadge">
                         <CheckCircle2 size={16} />
-                        <span>Packed â€¢ Staged in Rack {order.corridorMeta.code}</span>
+                        <span>Packed • Staged in Rack {order.corridorMeta.code}</span>
                       </div>
                     )}
 
                     {isInTransit && (
                       <div className="hubStatusConfirmedBadge inTransit">
                         <Truck size={16} />
-                        <span>In Transit â€¢ Courier Handover Verified</span>
+                        <span>In Transit • Courier Handover Verified</span>
                       </div>
                     )}
                   </div>

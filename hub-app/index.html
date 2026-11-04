@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" style="background-color:#090c12;margin:0;padding:0;min-height:100%;">
   <head>
     <meta charset="UTF-8" />
     <meta
@@ -11,15 +11,33 @@
       name="description"
       content="Official MotoDC Warehouse Packing Station for quality inspection, barcode scanning, shipping labels, and corridor parcel staging."
     />
-    <meta name="theme-color" content="#090d14" />
+    <meta name="theme-color" content="#090c12" />
     <meta name="application-name" content="MotoDC Hub" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="MotoDC Hub" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="manifest" href="/manifest.json" />
+      <style>
+      html, body {
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 100% !important;
+        min-height: 100% !important;
+        background-color: #090c12 !important;
+        color: #f1f5f9;
+        -webkit-font-smoothing: antialiased;
+        overflow-x: hidden;
+      }
+      #root {
+        min-height: 100%;
+        background-color: #090c12 !important;
+        display: flex;
+        flex-direction: column;
+      }
+    </style>
   </head>
-  <body>
+  <body style="background-color:#090c12;margin:0;padding:0;min-height:100%;overflow-x:hidden;">
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
     <script>
