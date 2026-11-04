@@ -35,14 +35,20 @@ export default function Login({ onLogin, onEnterChangePassword, theme, onToggleT
 
       // Morning Window: 8:15 AM (495m) to 9:00 AM (540m)
       if (minutes >= 495 && minutes < 540) {
-        const isUrgent = minutes >= 525; // 8:45 AM - 9:00 AM
+        const isCritical = minutes >= 535; // 8:55 AM - 9:00 AM (5 mins before grace timing ends)
+        const isUrgent = minutes >= 525 && !isCritical; // 8:45 AM - 8:54 AM
         return {
           isOpen: true,
-          isUrgent,
-          label: isUrgent
+          isUrgent: isUrgent || isCritical,
+          isCritical,
+          label: isCritical
+            ? `🚨 FINAL CALL: Grace Ends in ${540 - minutes} Mins (9:00 AM Sharp)!`
+            : isUrgent
             ? `⚠️ URGENT: Check-in closes at 9:00 AM (${540 - minutes}m left)`
             : '🟢 Karaikal Hub Check-In Active (Closes at 9:00 AM)',
-          sub: isUrgent
+          sub: isCritical
+            ? 'Grace timing is expiring! Log in immediately to avoid unpunctuality strike.'
+            : isUrgent
             ? 'Log in now to avoid an unpunctuality strike and bonus deduction!'
             : 'Log in now to secure your ₹2,500 monthly punctuality bonus.',
         };
@@ -287,16 +293,21 @@ export default function Login({ onLogin, onEnterChangePassword, theme, onToggleT
               margin: '14px 0 16px',
               padding: '10px 14px',
               borderRadius: '10px',
-              background: loginTimeStatus.isUrgent ? 'rgba(239, 68, 68, 0.15)' : 'rgba(34, 197, 94, 0.15)',
-              border: `1px solid ${loginTimeStatus.isUrgent ? '#ef4444' : '#22c55e'}`,
+              background: loginTimeStatus.isCritical
+                ? 'rgba(255, 49, 87, 0.22)'
+                : loginTimeStatus.isUrgent
+                ? 'rgba(239, 68, 68, 0.15)'
+                : 'rgba(34, 197, 94, 0.15)',
+              border: `1px solid ${loginTimeStatus.isCritical ? '#ff3157' : loginTimeStatus.isUrgent ? '#ef4444' : '#22c55e'}`,
               textAlign: 'left',
               display: 'flex',
               alignItems: 'flex-start',
-              gap: '10px'
+              gap: '10px',
+              boxShadow: loginTimeStatus.isCritical ? '0 0 14px rgba(255, 49, 87, 0.35)' : 'none'
             }}>
-              <Bell size={18} color={loginTimeStatus.isUrgent ? '#ef4444' : '#22c55e'} style={{ flexShrink: 0, marginTop: '2px' }} />
+              <Bell size={18} color={loginTimeStatus.isCritical ? '#ff3157' : loginTimeStatus.isUrgent ? '#ef4444' : '#22c55e'} style={{ flexShrink: 0, marginTop: '2px' }} />
               <div>
-                <div style={{ fontWeight: 700, fontSize: '13px', color: loginTimeStatus.isUrgent ? '#ef4444' : '#22c55e' }}>
+                <div style={{ fontWeight: 700, fontSize: '13px', color: loginTimeStatus.isCritical ? '#ff3157' : loginTimeStatus.isUrgent ? '#ef4444' : '#22c55e' }}>
                   {loginTimeStatus.label}
                 </div>
                 <div style={{ fontSize: '11px', color: '#cbd5e1', marginTop: '2px' }}>

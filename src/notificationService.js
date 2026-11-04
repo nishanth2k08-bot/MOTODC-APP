@@ -119,39 +119,68 @@ export const scheduleNativeShiftAlarms = async () => {
     const perm = await LocalNotifications.checkPermissions();
     if (perm && perm.display !== 'granted') return;
 
-    // Avoid duplicate scheduling if already armed in OS AlarmManager
+    // First cancel any legacy alarms so we don't have stale/inexact alarms lingering
     try {
-      const pending = await LocalNotifications.getPending();
-      const ids = new Set((pending?.notifications || []).map((n) => n.id));
-      if (ids.has(9915) && ids.has(9916)) {
-        return;
-      }
+      await LocalNotifications.cancel({
+        notifications: [
+          { id: 9913 },
+          { id: 9914 },
+          { id: 9915 },
+          { id: 9916 },
+          { id: 9917 },
+          { id: 9918 },
+        ],
+      });
     } catch (_) {}
 
     await LocalNotifications.schedule({
       notifications: [
-        {
-          id: 9915,
-          title: '🚨 URGENT: Check-In Cutoff in 15 Mins!',
-          body: 'Morning shift check-in closes at 9:00 AM sharp! Log in now to protect your ₹2,500 monthly bonus.',
-          channelId: 'motodc_shift_alerts',
-          schedule: {
-            on: { hour: 8, minute: 45 },
-            allowWhileIdle: true,
-          },
-          isExactNotification: false,
-        },
+        // 1. Sharp 8:15 AM - Morning Shift Check-In Opens (Daily)
         {
           id: 9916,
           title: '⏰ Karaikal Hub Check-In is Open!',
-          body: 'Check-in window is active (8:15 AM – 9:00 AM). Log in now to record on-time attendance.',
+          body: 'Morning check-in window is active (8:15 AM – 9:00 AM). Log in now to record on-time attendance.',
           channelId: 'motodc_shift_alerts',
           schedule: {
             on: { hour: 8, minute: 15 },
+            every: 'day',
+            repeats: true,
             allowWhileIdle: true,
           },
-          isExactNotification: false,
+          allowWhileIdle: true,
+          isExactNotification: true,
         },
+        // 2. 8:45 AM - 15 Mins Before Grace Cutoff (Daily)
+        {
+          id: 9915,
+          title: '⚠️ Shift Check-In Grace Window Closing!',
+          body: '15 minutes left before check-in cutoff at 9:00 AM. Log in now to protect your ₹2,500 monthly bonus.',
+          channelId: 'motodc_shift_alerts',
+          schedule: {
+            on: { hour: 8, minute: 45 },
+            every: 'day',
+            repeats: true,
+            allowWhileIdle: true,
+          },
+          allowWhileIdle: true,
+          isExactNotification: true,
+        },
+        // 3. 8:55 AM - 5 Mins Before Grace Timing Ends (CRITICAL FINAL WARNING - Daily)
+        {
+          id: 9914,
+          title: '🚨 FINAL CALL: Grace Timing Ends in 5 Mins (9:00 AM)!',
+          body: 'Check-in closes at 9:00 AM sharp! Log in immediately to avoid late strike & protect your ₹2,500 bonus.',
+          channelId: 'motodc_shift_alerts',
+          schedule: {
+            on: { hour: 8, minute: 55 },
+            every: 'day',
+            repeats: true,
+            allowWhileIdle: true,
+          },
+          allowWhileIdle: true,
+          isExactNotification: true,
+        },
+        // 4. 1:15 PM (13:15) - Afternoon Shift Check-In Opens (Daily)
         {
           id: 9917,
           title: '⏰ Afternoon Shift Check-In is Open!',
@@ -159,10 +188,29 @@ export const scheduleNativeShiftAlarms = async () => {
           channelId: 'motodc_shift_alerts',
           schedule: {
             on: { hour: 13, minute: 15 },
+            every: 'day',
+            repeats: true,
             allowWhileIdle: true,
           },
-          isExactNotification: false,
+          allowWhileIdle: true,
+          isExactNotification: true,
         },
+        // 5. 1:55 PM (13:55) - 5 Mins Before Afternoon Grace Cutoff (Daily)
+        {
+          id: 9913,
+          title: '🚨 FINAL CALL: Afternoon Grace Ends in 5 Mins (2:00 PM)!',
+          body: 'Afternoon check-in closes at 2:00 PM sharp. Log in now to avoid attendance strike.',
+          channelId: 'motodc_shift_alerts',
+          schedule: {
+            on: { hour: 13, minute: 55 },
+            every: 'day',
+            repeats: true,
+            allowWhileIdle: true,
+          },
+          allowWhileIdle: true,
+          isExactNotification: true,
+        },
+        // 6. 8:30 PM (20:30) - Shift Hours Concluded (Daily)
         {
           id: 9918,
           title: '🏁 Shift Hours Concluded (8:30 PM)',
@@ -170,13 +218,16 @@ export const scheduleNativeShiftAlarms = async () => {
           channelId: 'motodc_shift_alerts',
           schedule: {
             on: { hour: 20, minute: 30 },
+            every: 'day',
+            repeats: true,
             allowWhileIdle: true,
           },
-          isExactNotification: false,
+          allowWhileIdle: true,
+          isExactNotification: true,
         },
       ],
     });
-    console.log('[MotoDC] Native OS-level shift alarms scheduled successfully.');
+    console.log('[MotoDC] Native OS-level exact shift alarms scheduled successfully.');
   } catch (err) {
     console.warn('[MotoDC] Error scheduling native OS shift alarms:', err);
   }
@@ -189,7 +240,14 @@ export const cancelNativeShiftAlarms = async () => {
   try {
     if (typeof LocalNotifications === 'undefined') return;
     await LocalNotifications.cancel({
-      notifications: [{ id: 9915 }, { id: 9916 }, { id: 9917 }, { id: 9918 }],
+      notifications: [
+        { id: 9913 },
+        { id: 9914 },
+        { id: 9915 },
+        { id: 9916 },
+        { id: 9917 },
+        { id: 9918 },
+      ],
     });
     console.log('[MotoDC] Native shift alarms disarmed (rider on shift).');
   } catch (err) {
@@ -252,44 +310,87 @@ export const checkAndNotifyLoginTime = (isLoggedIn) => {
     const utc = now.getTime() + now.getTimezoneOffset() * 60000;
     const ist = new Date(utc + 330 * 60000);
     const minutes = ist.getHours() * 60 + ist.getMinutes();
+    const today = ist.toISOString().slice(0, 10);
 
-    // Morning Window: 8:15 AM (495m) to 9:00 AM (540m)
-    const isMorningWindow = minutes >= 495 && minutes < 540;
-    const isMorningFinalWarning = minutes >= 525 && minutes < 540; // 8:45 AM - 9:00 AM
+    // Standard Shift Morning Milestones (8:30 AM Shift Start, 9:00 AM Grace Cutoff)
+    // 8:15 AM (495m): Check-In Window Opens
+    // 8:45 AM (525m): 15 Mins Before Grace Cutoff
+    // 8:55 AM (535m): 5 Mins Before Grace Cutoff (CRITICAL FINAL WARNING)
+    // 9:00 AM (540m): Cutoff Closes
 
-    // Afternoon Window: 1:15 PM (795m) to 2:00 PM (840m)
-    const isAfternoonWindow = minutes >= 795 && minutes < 840;
-
-    const lastNotifiedKey = 'motodc_last_login_notify_' + ist.toISOString().slice(0, 10);
-    const lastNotifiedMinute = Number(localStorage.getItem(lastNotifiedKey) || 0);
-
-    // Throttle so we only notify once every 10 minutes while on the login screen
-    if (minutes - lastNotifiedMinute >= 10) {
-      if (isMorningFinalWarning) {
+    // 1. 5-Minute Warning Before Grace Timing Ends (8:55 AM - 9:00 AM)
+    if (minutes >= 535 && minutes < 540) {
+      const key = `motodc_notified_grace5_${today}`;
+      if (!localStorage.getItem(key)) {
         sendLocalNotification({
-          id: 9901,
-          title: '🚨 URGENT: Check-In Cutoff in 15 Mins!',
-          body: 'Morning shift check-in closes at 9:00 AM sharp! Log in now to protect your ₹2,500 monthly bonus.',
+          id: 9904,
+          title: '🚨 FINAL CALL: Grace Timing Ends in 5 Mins (9:00 AM)!',
+          body: 'Check-in closes at 9:00 AM sharp! Log in immediately to avoid late strike & protect your ₹2,500 monthly bonus.',
           channelId: 'motodc_shift_alerts',
         });
-        localStorage.setItem(lastNotifiedKey, String(minutes));
-      } else if (isMorningWindow) {
+        localStorage.setItem(key, '1');
+      }
+      return;
+    }
+
+    // 2. 15-Minute Warning Before Grace Timing Ends (8:45 AM - 8:54 AM)
+    if (minutes >= 525 && minutes < 535) {
+      const key = `motodc_notified_grace15_${today}`;
+      if (!localStorage.getItem(key)) {
+        sendLocalNotification({
+          id: 9901,
+          title: '⚠️ Shift Check-In Grace Window Closing!',
+          body: '15 minutes left before check-in cutoff at 9:00 AM. Log in now to protect your ₹2,500 monthly bonus.',
+          channelId: 'motodc_shift_alerts',
+        });
+        localStorage.setItem(key, '1');
+      }
+      return;
+    }
+
+    // 3. 8:15 AM - 8:25 AM: Check-In Opens (Only during initial opening window)
+    if (minutes >= 495 && minutes < 505) {
+      const key = `motodc_notified_open815_${today}`;
+      if (!localStorage.getItem(key)) {
         sendLocalNotification({
           id: 9902,
           title: '⏰ Karaikal Hub Check-In is Open!',
           body: 'Check-in window is active (8:15 AM – 9:00 AM). Log in now to record on-time attendance.',
           channelId: 'motodc_shift_alerts',
         });
-        localStorage.setItem(lastNotifiedKey, String(minutes));
-      } else if (isAfternoonWindow) {
+        localStorage.setItem(key, '1');
+      }
+      return;
+    }
+
+    // 4. 1:55 PM - 2:00 PM: 5 Mins Before Afternoon Grace Cutoff
+    if (minutes >= 835 && minutes < 840) {
+      const key = `motodc_notified_afternoon5_${today}`;
+      if (!localStorage.getItem(key)) {
+        sendLocalNotification({
+          id: 9905,
+          title: '🚨 FINAL CALL: Afternoon Grace Ends in 5 Mins (2:00 PM)!',
+          body: 'Afternoon check-in closes at 2:00 PM sharp. Log in now to avoid attendance strike.',
+          channelId: 'motodc_shift_alerts',
+        });
+        localStorage.setItem(key, '1');
+      }
+      return;
+    }
+
+    // 5. 1:15 PM - 1:25 PM: Afternoon Check-In Opens
+    if (minutes >= 795 && minutes < 805) {
+      const key = `motodc_notified_afternoon_open_${today}`;
+      if (!localStorage.getItem(key)) {
         sendLocalNotification({
           id: 9903,
           title: '⏰ Afternoon Shift Check-In is Open!',
-          body: 'Afternoon check-in window is active. Log in now at Karaikal Hub.',
+          body: 'Afternoon check-in window is active (1:15 PM – 2:00 PM). Log in now at Karaikal Hub.',
           channelId: 'motodc_shift_alerts',
         });
-        localStorage.setItem(lastNotifiedKey, String(minutes));
+        localStorage.setItem(key, '1');
       }
+      return;
     }
   } catch (err) {
     console.warn('Error checking login time:', err);
