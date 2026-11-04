@@ -134,8 +134,12 @@ public class OrderPollReceiver extends BroadcastReceiver {
         String body = (customer != null && !customer.isEmpty() ? "Customer: " + customer + " • " : "")
                 + "Assigned to your route in " + city + ". Open app to start delivery.";
 
+        int smallIcon = context.getApplicationInfo().icon != 0
+                ? context.getApplicationInfo().icon
+                : android.R.drawable.ic_dialog_info;
+
         NotificationCompat.Builder builder = new NotificationCompat.Builder(context, CHANNEL_ID)
-                .setSmallIcon(R.mipmap.ic_launcher)
+                .setSmallIcon(smallIcon)
                 .setContentTitle(title)
                 .setContentText(body)
                 .setStyle(new NotificationCompat.BigTextStyle().bigText(body + "\nTotal active orders: " + totalCount))

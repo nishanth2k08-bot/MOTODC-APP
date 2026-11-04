@@ -1,5 +1,8 @@
+import { registerPlugin } from '@capacitor/core';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { Geolocation } from '@capacitor/geolocation';
+
+const MotoDCBridge = registerPlugin('MotoDCBridge');
 import React, { useState, useEffect } from 'react';
 import { initNotifications, checkAndNotifyLoginTime, scheduleNativeShiftAlarms, cancelNativeShiftAlarms, sendLocalNotification, playNotificationChime } from './notificationService';
 import { collection, getDocs, updateDoc, doc, arrayUnion, Timestamp, onSnapshot } from 'firebase/firestore';
@@ -97,12 +100,10 @@ export default function App() {
 
     // Sync with native Android AlarmManager poller (for background when app cleared from recents)
     try {
-      if (window.MotoDCAndroid?.setRiderSession) {
-        window.MotoDCAndroid.setRiderSession(
-          String(rider.username || '').trim(),
-          String(rider.riderId || rider.username || '').trim()
-        );
-      }
+      MotoDCBridge.setRiderSession({
+        username: String(rider.username || '').trim(),
+        riderId: String(rider.riderId || rider.username || '').trim(),
+      }).catch(() => {});
     } catch (_) {}
 
     const storageKey = 'motodc_known_assigned_orders_' + riderCode;
@@ -249,9 +250,7 @@ export default function App() {
       } catch (_) {}
       setRider(null);
       try {
-        if (window.MotoDCAndroid?.clearRiderSession) {
-          window.MotoDCAndroid.clearRiderSession();
-        }
+        MotoDCBridge.clearRiderSession().catch(() => {});
       } catch (_) {}
       try {
         localStorage.removeItem('motodc_partner_rider');
