@@ -123,15 +123,6 @@ export default function BarcodeScannerModal({ isOpen, onClose, onBarcodeDetected
             </div>
           )}
 
-          {/* USB Handheld Hardware Scanner Callout */}
-          <div className="hubHardwareScannerBanner">
-            <Zap size={16} color="#38bdf8" />
-            <div>
-              <strong>USB / Bluetooth Barcode Gun Listening</strong>
-              <small>You can also pull the trigger on any physical scanner anywhere in the app</small>
-            </div>
-          </div>
-
           {/* Manual Input Fallback */}
           <form className="hubScannerManualForm" onSubmit={handleManualSubmit}>
             <input

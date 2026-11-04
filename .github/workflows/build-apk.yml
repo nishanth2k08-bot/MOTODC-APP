@@ -82,8 +82,8 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/heads/main')
         with:
-          tag_name: v1.0.21
-          name: "MotoDC Android APKs (Partner & Hub v1.0.21)"
+          tag_name: v1.0.22
+          name: "MotoDC Android APKs (Partner & Hub v1.0.22)"
           body: |
             ## 🚀 MotoDC Android Apps (Partner & Hub v1.0.18)
             
