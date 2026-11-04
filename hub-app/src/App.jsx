@@ -163,53 +163,55 @@ export default function App() {
     toast('Station locked', { icon: '🔒' });
   };
 
-  // Real-Time Sync with Firestore Orders
+  // State for loaded orders from Vercel Serverless Admin API
+  const [hubOrders, setHubOrders] = useState([]);
+  const lastOrderCountRef = useRef(0);
+
+  // Real-Time / Polled Sync via Vercel Admin API (bypasses unauthenticated Firestore client rules)
+  const fetchHubOrders = async () => {
+    if (!stationAuth) return;
+    try {
+      const res = await fetch('https://motodc-official.vercel.app/api/delivery-partner?action=hub-orders');
+      if (!res.ok) return;
+      const data = await res.json().catch(() => ({}));
+      if (Array.isArray(data.orders)) {
+        if (lastOrderCountRef.current > 0 && data.orders.length > lastOrderCountRef.current) {
+          playChime();
+          toast('New order received for packing!', { icon: '📦' });
+        }
+        lastOrderCountRef.current = data.orders.length;
+        setHubOrders(data.orders);
+      }
+    } catch (err) {
+      console.warn('Hub orders sync error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (!stationAuth) return;
     setLoading(true);
+    fetchHubOrders();
 
-    const codCol = collection(db, 'orders', 'cod orders', 'records');
-    const onlineCol = collection(db, 'orders', 'online orders', 'records');
+    const interval = setInterval(fetchHubOrders, 3500);
 
-    let initialLoad = true;
-
-    const unsubCod = onSnapshot(codCol, (snap) => {
-      const docs = snap.docs.map((d) => ({ ...d.data(), id: d.id, collectionType: 'cod orders', paymentMethod: 'cod' }));
-      if (!initialLoad && docs.length > codOrders.length) {
-        playChime();
-        toast('New order received for packing!', { icon: '📦' });
-      }
-      setCodOrders(docs);
-      setLoading(false);
-    }, (err) => {
-      console.warn('Cod sync error in Hub:', err);
-      setLoading(false);
-    });
-
-    const unsubOnline = onSnapshot(onlineCol, (snap) => {
-      const docs = snap.docs.map((d) => ({ ...d.data(), id: d.id, collectionType: 'online orders', paymentMethod: 'online' }));
-      if (!initialLoad && docs.length > onlineOrders.length) {
-        playChime();
-        toast('New order received for packing!', { icon: '📦' });
-      }
-      setOnlineOrders(docs);
-      setLoading(false);
-    }, (err) => {
-      console.warn('Online sync error in Hub:', err);
-      setLoading(false);
-    });
-
-    initialLoad = false;
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') fetchHubOrders();
+    };
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    window.addEventListener('focus', fetchHubOrders);
 
     return () => {
-      unsubCod();
-      unsubOnline();
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+      window.removeEventListener('focus', fetchHubOrders);
     };
   }, [stationAuth]);
 
   // Combine and format active orders
   const allOrders = useMemo(() => {
-    return [...codOrders, ...onlineOrders].map((o) => {
+    return hubOrders.map((o) => {
       const corridorId = o.assignedCorridor || detectDeliveryZone(o.shipping);
       const meta = CORRIDOR_METADATA[corridorId] || CORRIDOR_METADATA.central_town;
       return {
@@ -218,20 +220,26 @@ export default function App() {
         corridorMeta: meta,
       };
     });
-  }, [codOrders, onlineOrders]);
+  }, [hubOrders]);
 
   // Filtered orders for queue
   const filteredOrders = useMemo(() => {
     return allOrders.filter((o) => {
       const st = String(o.orderStatus || 'placed').toLowerCase();
+      const isPacked = Boolean(o.packedAt) || st === 'packed';
 
-      // Tab Filtering
+      // Tab Filtering:
+      // Awaiting Packing: Any order not yet packed (placed, confirmed, or auto-dispatched out_for_delivery)
       if (activeTab === 'pending') {
-        if (!['placed', 'confirmed', ''].includes(st)) return false;
+        if (['delivered', 'cancelled', 'returned'].includes(st)) return false;
+        if (isPacked) return false;
       } else if (activeTab === 'packed') {
-        if (st !== 'packed') return false;
+        // Packed and staged at hub: Has packedAt or st === 'packed', not completed
+        if (['delivered', 'cancelled', 'returned'].includes(st)) return false;
+        if (!isPacked) return false;
       } else if (activeTab === 'in_transit') {
-        if (!['shipped', 'out_for_delivery'].includes(st)) return false;
+        // In Transit: Handed over / on the road or delivered
+        if (!['shipped', 'out_for_delivery', 'delivered'].includes(st)) return false;
       }
 
       // Corridor Filtering
@@ -354,22 +362,27 @@ export default function App() {
   const handleMarkPackedAndVerified = async (order) => {
     setUpdatingId(order.id);
     try {
-      const docRef = doc(db, 'orders', order.collectionType, 'records', order.id);
-      await updateDoc(docRef, {
-        orderStatus: 'packed',
-        packedAt: new Date().toISOString(),
-        history: arrayUnion({
-          status: 'packed',
-          timestamp: new Date().toISOString(),
+      const res = await fetch('https://motodc-official.vercel.app/api/delivery-partner?action=hub-mark-packed', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          orderId: order.id,
+          collectionType: order.collectionType,
           note: 'Packed & Quality Verified at MotoDC Central Warehouse (Karaikal Hub). Staged in ' + order.corridorMeta.name + ' rack.',
         }),
       });
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || 'Server rejected pack status');
+      }
 
       playChime();
       toast.success(`✅ Order #${order.orderId || order.id} Packed & Staged into ${order.corridorMeta.name}!`, {
         duration: 5000,
         icon: '📦',
       });
+      fetchHubOrders();
     } catch (err) {
       console.error('Mark packed error:', err);
       toast.error('Could not update status: ' + err.message);
@@ -476,15 +489,22 @@ export default function App() {
   }
 
   // Counts for pills
-  const pendingCount = allOrders.filter((o) =>
-    ['placed', 'confirmed', ''].includes(String(o.orderStatus || 'placed').toLowerCase())
-  ).length;
-  const packedCount = allOrders.filter(
-    (o) => String(o.orderStatus || '').toLowerCase() === 'packed'
-  ).length;
-  const inTransitCount = allOrders.filter((o) =>
-    ['shipped', 'out_for_delivery'].includes(String(o.orderStatus || '').toLowerCase())
-  ).length;
+  const pendingCount = allOrders.filter((o) => {
+    const st = String(o.orderStatus || 'placed').toLowerCase();
+    const isPacked = Boolean(o.packedAt) || st === 'packed';
+    return !['delivered', 'cancelled', 'returned'].includes(st) && !isPacked;
+  }).length;
+
+  const packedCount = allOrders.filter((o) => {
+    const st = String(o.orderStatus || 'placed').toLowerCase();
+    const isPacked = Boolean(o.packedAt) || st === 'packed';
+    return !['delivered', 'cancelled', 'returned'].includes(st) && isPacked;
+  }).length;
+
+  const inTransitCount = allOrders.filter((o) => {
+    const st = String(o.orderStatus || '').toLowerCase();
+    return ['shipped', 'out_for_delivery', 'delivered'].includes(st);
+  }).length;
 
   return (
     <div className="hubStationContainer">
@@ -700,6 +720,14 @@ export default function App() {
                     </div>
                   </div>
 
+                  {/* Assigned Rider Badge if dispatched */}
+                  {order.assignedRiderName && (
+                    <div className="hubAssignedRiderTag">
+                      <Truck size={13} color="#38bdf8" />
+                      <span>Rider Assigned: <strong>{order.assignedRiderName}</strong> {order.assignedRiderId ? `(${order.assignedRiderId})` : ''}</span>
+                    </div>
+                  )}
+
                   {/* Customer & Address Details */}
                   <div className="hubCustomerSection">
                     <div className="hubCustomerName">
@@ -770,8 +798,8 @@ export default function App() {
                       <span>Print Label</span>
                     </button>
 
-                    {/* Stage 2 Status Updater */}
-                    {!isPacked && !isInTransit && (
+                    {/* Stage 2 Status Updater: Shows whenever order has NOT been packed at hub yet */}
+                    {!isPacked && (
                       <button
                         type="button"
                         className={`hubVerifyBtn ${allChecked ? 'ready' : ''}`}

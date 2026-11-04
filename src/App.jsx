@@ -95,6 +95,16 @@ export default function App() {
     const riderCode = String(rider.username || rider.riderId || '').trim().toUpperCase();
     if (!riderCode) return;
 
+    // Sync with native Android AlarmManager poller (for background when app cleared from recents)
+    try {
+      if (window.MotoDCAndroid?.setRiderSession) {
+        window.MotoDCAndroid.setRiderSession(
+          String(rider.username || '').trim(),
+          String(rider.riderId || rider.username || '').trim()
+        );
+      }
+    } catch (_) {}
+
     const storageKey = 'motodc_known_assigned_orders_' + riderCode;
 
     const checkAssignedOrders = async () => {
@@ -238,6 +248,11 @@ export default function App() {
         }
       } catch (_) {}
       setRider(null);
+      try {
+        if (window.MotoDCAndroid?.clearRiderSession) {
+          window.MotoDCAndroid.clearRiderSession();
+        }
+      } catch (_) {}
       try {
         localStorage.removeItem('motodc_partner_rider');
         localStorage.removeItem('motodc_route_active_' + rider?.username);

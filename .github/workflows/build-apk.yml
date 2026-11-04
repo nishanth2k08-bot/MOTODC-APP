@@ -82,14 +82,14 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/heads/main')
         with:
-          tag_name: v1.0.22
-          name: "MotoDC Android APKs (Partner & Hub v1.0.22)"
+          tag_name: v1.0.23
+          name: "MotoDC Android APKs (Partner & Hub v1.0.23)"
           body: |
-            ## 🚀 MotoDC Android Apps (Partner & Hub v1.0.18)
+            ## 🚀 MotoDC Android Apps (Partner & Hub v1.0.23)
             
             Download and install native Android APKs on any Android device:
-            * **MotoDC-Partner.apk**: Dedicated app for delivery riders & couriers with live GPS route heartbeat, runsheet checklist, and doorstep handover verification.
-            * **MotoDC-Hub.apk**: Dedicated warehouse fulfillment app for Karaikal Hub floor staff with high-speed camera barcode scanner, USB/Bluetooth barcode wedge scanner, and corridor rack staging.
+            * **MotoDC-Partner.apk**: Dedicated app for delivery riders & couriers with native Android AlarmManager background poller (receives urgent order assignment notifications even when closed or cleared from recent tasks), live GPS route heartbeat, runsheet checklist, and doorstep handover verification.
+            * **MotoDC-Hub.apk**: Dedicated warehouse fulfillment app for Karaikal Hub floor staff with real-time order queue (placed, confirmed, and auto-dispatched orders), assigned rider badges, high-speed camera barcode scanner, USB/Bluetooth barcode wedge scanner, and corridor rack staging.
           files: |
             release-output/MotoDC-Partner.apk
             release-output/MotoDC-Hub.apk
