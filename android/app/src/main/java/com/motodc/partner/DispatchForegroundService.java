@@ -39,7 +39,7 @@ public class DispatchForegroundService extends Service {
     private static final String PREFS_NAME = "motodc_partner_prefs";
     private static final String SERVICE_CHANNEL_ID = "motodc_duty_service_channel";
     private static final int SERVICE_NOTIFICATION_ID = 5001;
-    private static final int POLL_INTERVAL_SECONDS = 15;
+    private static final int POLL_INTERVAL_SECONDS = 5;
 
     private ScheduledExecutorService executorService;
     private boolean isRunning = false;

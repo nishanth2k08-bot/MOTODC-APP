@@ -3,11 +3,15 @@ package com.motodc.partner;
 import android.content.Context;
 import android.content.SharedPreferences;
 
+import com.getcapacitor.JSArray;
 import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
+
+import java.util.HashSet;
+import java.util.Set;
 
 @CapacitorPlugin(name = "MotoDCBridge")
 public class MotoDCBridgePlugin extends Plugin {
@@ -53,9 +57,37 @@ public class MotoDCBridgePlugin extends Plugin {
         int count = call.getInt("count", 1);
         Context ctx = getContext();
         if (ctx != null) {
+            SharedPreferences prefs = ctx.getSharedPreferences("motodc_partner_prefs", Context.MODE_PRIVATE);
+            Set<String> notified = prefs.getStringSet("notified_order_ids", new HashSet<>());
+            if (!orderId.isEmpty() && notified.contains(orderId)) {
+                // Already notified by native background service or earlier trigger — prevent duplicate alert
+                call.resolve();
+                return;
+            }
+            if (!orderId.isEmpty()) {
+                Set<String> updated = new HashSet<>(notified);
+                updated.add(orderId);
+                prefs.edit().putStringSet("notified_order_ids", updated).apply();
+            }
             OrderPollReceiver.showNotification(ctx, orderId, customer, city, count);
         }
         call.resolve();
+    }
+
+    @PluginMethod
+    public void getNotifiedOrderIds(PluginCall call) {
+        Context ctx = getContext();
+        JSObject ret = new JSObject();
+        JSArray arr = new JSArray();
+        if (ctx != null) {
+            SharedPreferences prefs = ctx.getSharedPreferences("motodc_partner_prefs", Context.MODE_PRIVATE);
+            Set<String> notified = prefs.getStringSet("notified_order_ids", new HashSet<>());
+            for (String id : notified) {
+                arr.put(id);
+            }
+        }
+        ret.put("notifiedIds", arr);
+        call.resolve(ret);
     }
 
     @PluginMethod

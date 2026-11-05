@@ -147,20 +147,33 @@ export default function App() {
           .map((s) => String(s.orderId || s.id || '').replace(/^#/, '').trim())
           .filter(Boolean);
 
+        // Check IDs already notified by native background ForegroundService so we never duplicate alerts
+        let nativeNotifiedIds = [];
+        try {
+          if (MotoDCBridge && typeof MotoDCBridge.getNotifiedOrderIds === 'function') {
+            const bridgeRes = await MotoDCBridge.getNotifiedOrderIds();
+            if (bridgeRes && Array.isArray(bridgeRes.notifiedIds)) {
+              nativeNotifiedIds = bridgeRes.notifiedIds;
+            }
+          }
+        } catch (_) {}
+        const nativeNotifiedSet = new Set(nativeNotifiedIds);
+
         const storedRaw = localStorage.getItem(storageKey);
         if (storedRaw === null) {
           // First time this device has loaded for this rider session:
-          // If orders are ALREADY assigned to the rider, notify them immediately!
-          if (currentOrderIds.length > 0) {
-            const count = currentOrderIds.length;
-            const previewList = currentOrderIds.slice(0, 2).map((x) => '#' + x).join(', ') + (count > 2 ? '...' : '');
+          // Filter out orders that were already alerted by the background service
+          const unnotifiedInitialIds = currentOrderIds.filter((id) => !nativeNotifiedSet.has(id));
+          if (unnotifiedInitialIds.length > 0) {
+            const count = unnotifiedInitialIds.length;
+            const previewList = unnotifiedInitialIds.slice(0, 2).map((x) => '#' + x).join(', ') + (count > 2 ? '...' : '');
 
             // Native Android OS heads-up alert banner with sound & vibration
             try {
               if (MotoDCBridge && typeof MotoDCBridge.triggerOrderNotification === 'function') {
                 const firstStop = data.stops[0];
                 MotoDCBridge.triggerOrderNotification({
-                  orderId: currentOrderIds[0] || 'ASSIGNED',
+                  orderId: unnotifiedInitialIds[0] || 'ASSIGNED',
                   customer: firstStop?.customer?.name || '',
                   city: firstStop?.shipping?.city || 'Karaikal',
                   count: count,
@@ -180,7 +193,7 @@ export default function App() {
             }
             toast.success(`📦 ${count} package(s) assigned: ${previewList}`, { duration: 6000, icon: '📦' });
           }
-          localStorage.setItem(storageKey, JSON.stringify(currentOrderIds));
+          localStorage.setItem(storageKey, JSON.stringify([...new Set([...currentOrderIds, ...nativeNotifiedIds])]));
           return;
         }
 
@@ -192,10 +205,10 @@ export default function App() {
           knownIds = [];
         }
 
-        const knownSet = new Set(knownIds);
-        const genuinelyNewIds = currentOrderIds.filter((id) => !knownSet.has(id));
+        const knownSet = new Set([...knownIds, ...nativeNotifiedIds]);
+        const genuinelyNewIds = currentOrderIds.filter((id) => !knownSet.has(id) && !nativeNotifiedSet.has(id));
 
-        // Fire notification when genuinely NEW packages are added to the rider's run sheet!
+        // Fire notification ONLY when genuinely NEW unnotified packages are added
         if (genuinelyNewIds.length > 0) {
           const count = genuinelyNewIds.length;
           const previewList = genuinelyNewIds.slice(0, 2).map((x) => '#' + x).join(', ') + (count > 2 ? '...' : '');
@@ -229,7 +242,7 @@ export default function App() {
         }
 
         // Always sync latest assigned order IDs snapshot to localStorage
-        localStorage.setItem(storageKey, JSON.stringify(currentOrderIds));
+        localStorage.setItem(storageKey, JSON.stringify([...new Set([...currentOrderIds, ...nativeNotifiedIds])]));
       } catch (err) {
         console.warn('[MotoDC] Background package check failed:', err);
       }
