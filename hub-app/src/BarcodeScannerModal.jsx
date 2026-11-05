@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
 import { Camera, X, AlertCircle, RefreshCw, Zap, CheckCircle2 } from 'lucide-react';
 
-export default function BarcodeScannerModal({ isOpen, onClose, onBarcodeDetected }) {
+export default function BarcodeScannerModal({ isOpen, onClose, onBarcodeDetected, targetOrder = null }) {
   const [cameraActive, setCameraActive] = useState(false);
   const [cameraError, setCameraError] = useState(null);
   const [manualCode, setManualCode] = useState('');
@@ -54,7 +54,7 @@ export default function BarcodeScannerModal({ isOpen, onClose, onBarcodeDetected
             navigator.vibrate([100, 50, 100]);
           }
 
-          onBarcodeDetected(decodedText);
+          onBarcodeDetected(decodedText, targetOrder);
           onClose();
         },
         () => {} // Silent non-match frame
@@ -82,7 +82,7 @@ export default function BarcodeScannerModal({ isOpen, onClose, onBarcodeDetected
   const handleManualSubmit = (e) => {
     e.preventDefault();
     if (!manualCode.trim()) return;
-    onBarcodeDetected(manualCode.trim());
+    onBarcodeDetected(manualCode.trim(), targetOrder);
     onClose();
   };
 
@@ -95,8 +95,16 @@ export default function BarcodeScannerModal({ isOpen, onClose, onBarcodeDetected
           <div className="hubScannerTitleBox">
             <Camera size={20} color="#ff3157" />
             <div>
-              <h3>Warehouse Barcode Scanner</h3>
-              <p>Scan 1D Linear Barcode (Code-128) or 2D QR Code on package label</p>
+              <h3>
+                {targetOrder
+                  ? `Scan Package #${targetOrder.orderId || targetOrder.id}`
+                  : 'Warehouse Barcode Scanner'}
+              </h3>
+              <p>
+                {targetOrder
+                  ? 'Scan barcode / QR code on package label to unlock packing checklist'
+                  : 'Scan 1D Linear Barcode (Code-128) or 2D QR Code on package label'}
+              </p>
             </div>
           </div>
           <button type="button" className="hubScannerCloseBtn" onClick={onClose} aria-label="Close">
@@ -127,7 +135,11 @@ export default function BarcodeScannerModal({ isOpen, onClose, onBarcodeDetected
           <form className="hubScannerManualForm" onSubmit={handleManualSubmit}>
             <input
               type="text"
-              placeholder="Or enter Order ID (e.g. MDC-80280625)..."
+              placeholder={
+                targetOrder
+                  ? `Enter Order ID (e.g. #${targetOrder.orderId || targetOrder.id})...`
+                  : 'Or enter Order ID (e.g. MDC-80280625)...'
+              }
               value={manualCode}
               onChange={(e) => setManualCode(e.target.value)}
             />
