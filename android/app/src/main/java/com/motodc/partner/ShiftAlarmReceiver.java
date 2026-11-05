@@ -130,8 +130,9 @@ public class ShiftAlarmReceiver extends BroadcastReceiver {
                                 .putLong("auto_logged_off_at", System.currentTimeMillis())
                                 .apply();
 
-                        // 2. Stop order polling alarm
+                        // 2. Stop order polling alarm and foreground service
                         OrderPollReceiver.stopPolling(context);
+                        DispatchForegroundService.stopService(context);
 
                         // 3. Fire high-priority heads-up notification immediately
                         showShiftNotification(

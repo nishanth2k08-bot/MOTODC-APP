@@ -44,8 +44,9 @@ public class BootReceiver extends BroadcastReceiver {
 
                     ShiftAlarmReceiver.notifyServerLogout(activeRider);
                 } else {
-                    // Shift hours are active; resume background order poller
+                    // Shift hours are active; resume background order poller & foreground service
                     OrderPollReceiver.scheduleNextPoll(context);
+                    DispatchForegroundService.startService(context, username, riderId);
                 }
             }
         }

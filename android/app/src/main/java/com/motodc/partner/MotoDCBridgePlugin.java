@@ -19,6 +19,7 @@ public class MotoDCBridgePlugin extends Plugin {
         Context ctx = getContext();
         if (ctx != null) {
             OrderPollReceiver.startPolling(ctx, username, riderId);
+            DispatchForegroundService.startService(ctx, username, riderId);
             ShiftAlarmReceiver.scheduleAllShiftAlarms(ctx);
         }
         call.resolve();
@@ -29,6 +30,7 @@ public class MotoDCBridgePlugin extends Plugin {
         Context ctx = getContext();
         if (ctx != null) {
             OrderPollReceiver.stopPolling(ctx);
+            DispatchForegroundService.stopService(ctx);
             ShiftAlarmReceiver.scheduleAllShiftAlarms(ctx);
         }
         call.resolve();
