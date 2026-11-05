@@ -75,6 +75,32 @@ export default function App() {
     }
   });
 
+  // Native Android Shift & Auto-Logoff Synchronization on Mount
+  useEffect(() => {
+    try {
+      if (MotoDCBridge && typeof MotoDCBridge.initShiftAlarms === 'function') {
+        MotoDCBridge.initShiftAlarms().catch(() => {});
+      }
+    } catch (_) {}
+
+    try {
+      if (MotoDCBridge && typeof MotoDCBridge.checkAutoLogoff === 'function') {
+        MotoDCBridge.checkAutoLogoff().then((res) => {
+          if (res && res.autoLoggedOff) {
+            setRider(null);
+            try {
+              localStorage.removeItem('motodc_partner_rider');
+            } catch (_) {}
+            toast.error('Shift concluded at 8:30 PM. You have been automatically signed off.', {
+              duration: 8000,
+              icon: '⏰',
+            });
+          }
+        }).catch(() => {});
+      }
+    } catch (_) {}
+  }, []);
+
   // Initialize Android Notification Channels & Shift Check-In Reminders (Non-blocking)
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -228,6 +254,12 @@ export default function App() {
     try {
       localStorage.setItem('motodc_partner_rider', JSON.stringify(profileWithTimestamp));
     } catch (_) {}
+    try {
+      MotoDCBridge.setRiderSession({
+        username: String(riderProfile.username || '').trim(),
+        riderId: String(riderProfile.riderId || riderProfile.username || '').trim(),
+      }).catch(() => {});
+    } catch (_) {}
     cancelNativeShiftAlarms().catch(() => {});
     initNotifications().catch(() => {});
     if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'default') {
@@ -284,6 +316,9 @@ export default function App() {
       }
     } catch (_) {}
     setRider(null);
+    try {
+      MotoDCBridge.clearRiderSession().catch(() => {});
+    } catch (_) {}
     try {
       localStorage.removeItem('motodc_partner_rider');
       localStorage.removeItem('motodc_route_active_' + rider?.username);

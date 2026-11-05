@@ -39,6 +39,11 @@
             android:name=".OrderPollReceiver"
             android:exported="false" />
 
+        <!-- Native Exact Shift Alarms Receiver (8:15 AM, 8:55 AM, 1:15 PM, 1:55 PM, 8:30 PM) -->
+        <receiver
+            android:name=".ShiftAlarmReceiver"
+            android:exported="false" />
+
         <!-- Reboot Listener: re-arms alarm after phone reboot -->
         <receiver
             android:name=".BootReceiver"

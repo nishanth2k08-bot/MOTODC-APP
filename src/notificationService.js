@@ -234,7 +234,8 @@ export const scheduleNativeShiftAlarms = async () => {
 };
 
 /**
- * Cancels native shift alarms while rider is actively logged in on duty.
+ * Cancels native shift check-in alarms while rider is actively logged in on duty.
+ * Keeps the 8:30 PM shift conclusion alarm (9918) armed!
  */
 export const cancelNativeShiftAlarms = async () => {
   try {
@@ -246,10 +247,10 @@ export const cancelNativeShiftAlarms = async () => {
         { id: 9915 },
         { id: 9916 },
         { id: 9917 },
-        { id: 9918 },
+        // Do NOT cancel 9918 (8:30 PM shift end alarm)
       ],
     });
-    console.log('[MotoDC] Native shift alarms disarmed (rider on shift).');
+    console.log('[MotoDC] Native check-in alarms disarmed while keeping 8:30 PM shift end armed.');
   } catch (err) {
     console.warn('[MotoDC] Error disarming native shift alarms:', err);
   }

@@ -223,7 +223,11 @@ public class OrderPollReceiver extends BroadcastReceiver {
     public static void stopPolling(Context context) {
         try {
             SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-            prefs.edit().clear().apply();
+            prefs.edit()
+                    .remove(KEY_RIDER_USERNAME)
+                    .remove(KEY_RIDER_ID)
+                    .remove(KEY_NOTIFIED_ORDERS)
+                    .apply();
 
             AlarmManager am = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
             if (am == null) return;

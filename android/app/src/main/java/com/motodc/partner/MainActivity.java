@@ -13,6 +13,9 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(MotoDCBridgePlugin.class);
         super.onCreate(savedInstanceState);
 
+        // Guarantee exact shift alarms are scheduled in Android AlarmManager
+        ShiftAlarmReceiver.scheduleAllShiftAlarms(this);
+
         // Resume background poller if rider session exists
         SharedPreferences prefs = getSharedPreferences("motodc_partner_prefs", Context.MODE_PRIVATE);
         String username = prefs.getString("rider_username", "");
