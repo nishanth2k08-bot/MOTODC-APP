@@ -59,8 +59,16 @@ export default function DailyRunSheet({
     onPendingStopsLoaded?.(pendingStops);
   }, [pendingStops]);
 
+  const riderCode = String(rider?.username || rider?.riderId || 'MDC-8586').trim().toUpperCase();
+
   // Privacy-First Route GPS Tracking State: Active ONLY after collecting packages at Hub
-  const [isRouteActive, setIsRouteActive] = useState(false);
+  const [isRouteActive, setIsRouteActive] = useState(() => {
+    try {
+      return localStorage.getItem('motodc_route_active_' + riderCode) === 'true';
+    } catch (_) {
+      return false;
+    }
+  });
   const [lastGpsCoords, setLastGpsCoords] = useState(null);
 
   const gpsIntervalRef = useRef(null);
@@ -261,14 +269,31 @@ export default function DailyRunSheet({
       return;
     }
 
-    toast.loading('Activating Live Route GPS & Connecting to Radar...', { id: 'gps-start' });
+    toast.loading('Departing Hub & Activating Live Route GPS...', { id: 'gps-start' });
 
     setIsRouteActive(true);
-    const riderCode = String(rider?.username || rider?.riderId || 'MDC-8586').trim().toUpperCase();
+    const cleanRiderCode = String(rider?.username || rider?.riderId || 'MDC-8586').trim().toUpperCase();
     try {
-      localStorage.setItem('motodc_route_active_' + riderCode, 'true');
+      localStorage.setItem('motodc_route_active_' + cleanRiderCode, 'true');
     } catch (_) {}
 
+    // 1. Notify Backend: Rider collected packages & departed Hub (Transitions order status to Out for Delivery / In Transit)
+    try {
+      const orderIds = pendingStops.map((s) => String(s.orderId || s.id));
+      await fetch('https://motodc-official.vercel.app/api/delivery-partner?action=rider-depart-hub', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          riderId: cleanRiderCode,
+          riderName: rider?.name || 'MotoDC Partner',
+          orderIds,
+        }),
+      });
+    } catch (err) {
+      console.warn('Backend depart-hub notification warning:', err);
+    }
+
+    // 2. Start Live Geolocation Watch
     await startGpsWatch();
 
     toast.success('Packages Checked Out! Live Route GPS Active.', {
@@ -595,6 +620,49 @@ export default function DailyRunSheet({
                 <Camera size={15} /> Scan Packages into Delivery Bag ({pendingStops.length - hubScannedCount} remaining)
               </button>
             </>
+          ) : isRouteActive ? (
+            <div
+              style={{
+                width: '100%',
+                padding: '12px 14px',
+                borderRadius: '10px',
+                background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.18), rgba(16, 185, 129, 0.1))',
+                border: '1px solid rgba(34, 197, 94, 0.4)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '8px',
+                marginTop: '8px',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span className="liveGpsDot pulsing" style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#22c55e', display: 'inline-block' }} />
+                <div>
+                  <strong style={{ color: '#22c55e', fontSize: '12px', display: 'block' }}>
+                    Departed Hub • Live GPS Route Broadcasting
+                  </strong>
+                  <small style={{ color: '#86efac', fontSize: '10px' }}>
+                    {lastGpsCoords?.updatedAt ? `Last Ping: ${lastGpsCoords.updatedAt}` : 'Transmitting motorcycle speed & radar coordinates'}
+                  </small>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={stopGpsWatch}
+                style={{
+                  background: 'rgba(239, 68, 68, 0.15)',
+                  border: '1px solid rgba(239, 68, 68, 0.3)',
+                  color: '#f87171',
+                  padding: '5px 10px',
+                  borderRadius: '6px',
+                  fontSize: '11px',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                }}
+              >
+                Pause
+              </button>
+            </div>
           ) : (
             <button
               type="button"

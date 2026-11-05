@@ -77,15 +77,6 @@ export default function App() {
   // Modals & Checklist State
   const [labelOrder, setLabelOrder] = useState(null);
   const [scannerOpen, setScannerOpen] = useState(false);
-  const [targetOrderForScan, setTargetOrderForScan] = useState(null);
-  const [scannedOrderIds, setScannedOrderIds] = useState(() => {
-    try {
-      const saved = localStorage.getItem('motodc_hub_scanned_orders');
-      return saved ? JSON.parse(saved) : {};
-    } catch {
-      return {};
-    }
-  });
   const [checkedItems, setCheckedItems] = useState({}); // { [orderId_itemIdx]: boolean }
   const [updatingId, setUpdatingId] = useState(null);
   const [lastScannedBarcode, setLastScannedBarcode] = useState('');
@@ -238,16 +229,16 @@ export default function App() {
       const isPacked = Boolean(o.packedAt) || st === 'packed';
 
       // Tab Filtering:
-      // Awaiting Packing: Any order not yet packed (placed, confirmed, or auto-dispatched out_for_delivery)
+      // Awaiting Packing: Any order not yet packed
       if (activeTab === 'pending') {
-        if (['delivered', 'cancelled', 'returned'].includes(st)) return false;
+        if (['shipped', 'out_for_delivery', 'delivered', 'cancelled', 'returned'].includes(st)) return false;
         if (isPacked) return false;
       } else if (activeTab === 'packed') {
-        // Packed and staged at hub: Has packedAt or st === 'packed', not completed
-        if (['delivered', 'cancelled', 'returned'].includes(st)) return false;
+        // Packed and staged at hub: Has packedAt or st === 'packed', and not yet handed to rider/departed
+        if (['shipped', 'out_for_delivery', 'delivered', 'cancelled', 'returned'].includes(st)) return false;
         if (!isPacked) return false;
       } else if (activeTab === 'in_transit') {
-        // In Transit: Handed over / on the road or delivered
+        // In Transit: Handed over / on the road with courier
         if (!['shipped', 'out_for_delivery', 'delivered'].includes(st)) return false;
       }
 
@@ -275,60 +266,42 @@ export default function App() {
   }, [allOrders, activeTab, selectedCorridor, searchQuery]);
 
   // Barcode Handler (Handles both Camera Scans & Hardware USB Scanner guns)
-  const handleBarcodeIdentified = (rawCode, targetOrder = null) => {
+  const handleBarcodeIdentified = (rawCode) => {
     if (!rawCode) return;
     const clean = String(rawCode).trim().toLowerCase();
     setLastScannedBarcode(rawCode);
     playScannerBeep();
 
-    const activeTarget = targetOrder || targetOrderForScan;
-    let matched = null;
-
-    if (activeTarget) {
-      const targetId = String(activeTarget.id || '').toLowerCase();
-      const targetOrderId = String(activeTarget.orderId || '').toLowerCase();
-      if (targetId === clean || targetOrderId === clean || clean.includes(targetOrderId) || clean.includes(targetId)) {
-        matched = activeTarget;
-      }
-    }
-
-    if (!matched) {
-      // Search matching order in full pool
-      matched = allOrders.find((o) => {
-        const id = String(o.id || '').toLowerCase();
-        const orderId = String(o.orderId || '').toLowerCase();
-        return id === clean || orderId === clean || clean.includes(orderId) || clean.includes(id);
-      });
-    }
+    // Search matching order in full pool
+    const matched = allOrders.find((o) => {
+      const id = String(o.id || '').toLowerCase();
+      const orderId = String(o.orderId || '').toLowerCase();
+      return id === clean || orderId === clean || clean.includes(orderId) || clean.includes(id);
+    });
 
     if (matched) {
-      toast.success(`📦 Barcode Verified: Order #${matched.orderId || matched.id}! Checklist unlocked.`, {
-        icon: '✅',
+      toast.success(`📦 Barcode Matched: Order #${matched.orderId || matched.id}`, {
+        icon: '⚡',
         duration: 4000,
       });
-
-      // Mark order as verified via barcode scan
-      setScannedOrderIds((prev) => {
-        const next = { ...prev, [matched.id]: true, [matched.orderId]: true };
-        try {
-          localStorage.setItem('motodc_hub_scanned_orders', JSON.stringify(next));
-        } catch (_) {}
-        return next;
-      });
-
-      setTargetOrderForScan(null);
+      // Automatically switch to correct tab and open label modal
+      const st = String(matched.orderStatus || 'placed').toLowerCase();
+      if (st === 'packed') {
+        setActiveTab('packed');
+      } else if (['shipped', 'out_for_delivery'].includes(st)) {
+        setActiveTab('in_transit');
+      } else {
+        setActiveTab('pending');
+      }
       setSearchQuery('');
+      setLabelOrder(matched);
     } else {
-      toast.error(`Scanned: "${rawCode}" (No matching order found in queue)`, {
+      toast(`Scanned: "${rawCode}" (No order match found in queue)`, {
+        icon: 'ðŸ”',
         duration: 4500,
       });
       setSearchQuery(rawCode);
     }
-  };
-
-  const openScannerForOrder = (order) => {
-    setTargetOrderForScan(order);
-    setScannerOpen(true);
   };
 
   // Hardware USB/Bluetooth Barcode Scanner Listener (Keyboard Wedge)
@@ -519,13 +492,13 @@ export default function App() {
   const pendingCount = allOrders.filter((o) => {
     const st = String(o.orderStatus || 'placed').toLowerCase();
     const isPacked = Boolean(o.packedAt) || st === 'packed';
-    return !['delivered', 'cancelled', 'returned'].includes(st) && !isPacked;
+    return !['shipped', 'out_for_delivery', 'delivered', 'cancelled', 'returned'].includes(st) && !isPacked;
   }).length;
 
   const packedCount = allOrders.filter((o) => {
     const st = String(o.orderStatus || 'placed').toLowerCase();
     const isPacked = Boolean(o.packedAt) || st === 'packed';
-    return !['delivered', 'cancelled', 'returned'].includes(st) && isPacked;
+    return !['shipped', 'out_for_delivery', 'delivered', 'cancelled', 'returned'].includes(st) && isPacked;
   }).length;
 
   const inTransitCount = allOrders.filter((o) => {
@@ -581,7 +554,16 @@ export default function App() {
           </div>
         </div>
 
-        
+        {/* Row 3: Prominent Barcode Scanner Action Button (Bold Crimson Red) */}
+        <button
+          type="button"
+          className="hubOpenScannerBtn"
+          onClick={() => setScannerOpen(true)}
+          title="Open Camera Barcode Scanner"
+        >
+          <Camera size={17} />
+          <span>Open Barcode Scanner (Camera)</span>
+        </button>
       </header>
 
       {/* Navigation Toolbar */}
@@ -702,12 +684,6 @@ export default function App() {
               const isPacked = st === 'packed';
               const isInTransit = ['shipped', 'out_for_delivery'].includes(st);
               const isUpdating = updatingId === order.id;
-              const isOrderScanned = Boolean(
-                scannedOrderIds[order.id] ||
-                scannedOrderIds[order.orderId] ||
-                order.packedAt ||
-                isPacked
-              );
               const allChecked = (order.items || []).every(
                 (_, idx) => checkedItems[`${order.id}_${idx}`]
               );
@@ -717,12 +693,7 @@ export default function App() {
                   key={order.id}
                   className={`hubOrderCard ${isPacked ? 'packed' : ''} ${
                     isInTransit ? 'inTransit' : ''
-                  } ${!isOrderScanned && !isPacked ? 'unscanned clickable' : ''}`}
-                  onClick={() => {
-                    if (!isOrderScanned && !isPacked) {
-                      openScannerForOrder(order);
-                    }
-                  }}
+                  }`}
                 >
                   {/* Card Header */}
                   <div className="hubCardHeader">
@@ -778,31 +749,6 @@ export default function App() {
                     )}
                   </div>
 
-                  {/* Package Scanning Verification Banner */}
-                  {!isOrderScanned && !isPacked && (
-                    <div
-                      className="hubScanNoticeBanner"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        openScannerForOrder(order);
-                      }}
-                      title="Click to open camera scanner and verify parcel"
-                    >
-                      <div className="hubScanNoticeLeft">
-                        <Camera size={15} color="#ff3157" />
-                        <span>Package Not Scanned (Checklist Locked)</span>
-                      </div>
-                      <span className="hubScanActionPill">Scan Barcode 📷</span>
-                    </div>
-                  )}
-
-                  {isOrderScanned && !isPacked && (
-                    <div className="hubScannedSuccessBanner">
-                      <CheckCircle2 size={15} color="#22c55e" />
-                      <span>Barcode Verified • Spare Parts Checklist Unlocked</span>
-                    </div>
-                  )}
-
                   {/* Items Verification Checklist */}
                   <div className="hubChecklistSection">
                     <div className="hubChecklistHeader">
@@ -816,26 +762,16 @@ export default function App() {
                         return (
                           <div
                             key={idx}
-                            className={`hubCheckItem ${checked ? 'checked' : ''} ${!isOrderScanned ? 'locked' : ''}`}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              if (!isOrderScanned) {
-                                toast('🔒 Please scan the package barcode first to unlock checklist verification!', { icon: '🔒' });
-                                openScannerForOrder(order);
-                                return;
-                              }
-                              toggleItemCheck(order.id, idx);
-                            }}
+                            className={`hubCheckItem ${checked ? 'checked' : ''}`}
+                            onClick={() => toggleItemCheck(order.id, idx)}
                           >
                             <span className="hubCheckbox">
-                                {!isOrderScanned ? (
-                                  <Lock size={14} color="#94a3b8" />
-                                ) : checked ? (
-                                  <CheckSquare size={16} color="#22c55e" />
-                                ) : (
-                                  <Square size={16} color="#64748b" />
-                                )}
-                              </span>
+                              {checked ? (
+                                <CheckSquare size={16} color="#22c55e" />
+                              ) : (
+                                <Square size={16} color="#64748b" />
+                              )}
+                            </span>
                             <div className="hubItemDesc">
                               <span className="hubItemName">{item.name}</span>
                               <span className="hubItemMeta">
@@ -864,40 +800,21 @@ export default function App() {
 
                     {/* Stage 2 Status Updater: Shows whenever order has NOT been packed at hub yet */}
                     {!isPacked && (
-                      !isOrderScanned ? (
-                        <button
-                          type="button"
-                          className="hubVerifyBtn locked"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            toast('🔒 Please scan the package barcode first before marking as packed!', { icon: '🔒' });
-                            openScannerForOrder(order);
-                          }}
-                          title="Scan package barcode first to unlock"
-                        >
-                          <Lock size={15} />
-                          <span>Scan Barcode to Unlock</span>
-                        </button>
-                      ) : (
-                        <button
-                          type="button"
-                          className={`hubVerifyBtn ${allChecked ? 'ready' : ''}`}
-                          disabled={isUpdating}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleMarkPackedAndVerified(order);
-                          }}
-                        >
-                          <CheckCircle2 size={16} />
-                          <span>
-                            {isUpdating
-                              ? 'Updating...'
-                              : allChecked
-                              ? 'Mark Packed & Quality Verified'
-                              : 'Mark Packed'}
-                          </span>
-                        </button>
-                      )
+                      <button
+                        type="button"
+                        className={`hubVerifyBtn ${allChecked ? 'ready' : ''}`}
+                        disabled={isUpdating}
+                        onClick={() => handleMarkPackedAndVerified(order)}
+                      >
+                        <CheckCircle2 size={16} />
+                        <span>
+                          {isUpdating
+                            ? 'Updating...'
+                            : allChecked
+                            ? 'Mark Packed & Quality Verified'
+                            : 'Mark Packed'}
+                        </span>
+                      </button>
                     )}
 
                     {isPacked && (
@@ -924,12 +841,8 @@ export default function App() {
       {/* Camera Barcode Scanner Modal */}
       <BarcodeScannerModal
         isOpen={scannerOpen}
-        onClose={() => {
-          setScannerOpen(false);
-          setTargetOrderForScan(null);
-        }}
+        onClose={() => setScannerOpen(false)}
         onBarcodeDetected={handleBarcodeIdentified}
-        targetOrder={targetOrderForScan}
       />
 
       {/* Printable Shipping Label Modal */}

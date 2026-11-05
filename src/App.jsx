@@ -882,7 +882,7 @@ export default function App() {
     setVerifiedOrder(null);
     setTargetDoorstepStop(null);
     setHubScanMode(false);
-    setActiveTab("runsheet");
+    setActiveTab("scanner");
   };
 
   const handleClearRunSheet = () => {
