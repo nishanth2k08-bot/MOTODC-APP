@@ -12,6 +12,7 @@ import android.media.AudioAttributes;
 import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.Build;
+import android.os.PowerManager;
 import android.os.SystemClock;
 import android.util.Log;
 
@@ -43,20 +44,37 @@ public class OrderPollReceiver extends BroadcastReceiver {
 
     @Override
     public void onReceive(Context context, Intent intent) {
-        checkOrdersInBackground(context);
+        final PendingResult pendingResult = goAsync();
+        PowerManager pm = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
+        final PowerManager.WakeLock wakeLock = pm != null
+                ? pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "MotoDC:OrderPollWakeLock")
+                : null;
+        if (wakeLock != null) {
+            wakeLock.acquire(18000);
+        }
+        checkOrdersInBackground(context, pendingResult, wakeLock);
     }
 
     public static void checkOrdersInBackground(Context context) {
+        checkOrdersInBackground(context, null, null);
+    }
+
+    public static void checkOrdersInBackground(Context context, PendingResult pendingResult, PowerManager.WakeLock wakeLock) {
         SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         String riderId = prefs.getString(KEY_RIDER_ID, "");
         String username = prefs.getString(KEY_RIDER_USERNAME, "");
 
         String lookup = !riderId.isEmpty() ? riderId : username;
         if (lookup == null || lookup.trim().isEmpty()) {
+            if (wakeLock != null && wakeLock.isHeld()) {
+                try { wakeLock.release(); } catch (Exception ignored) {}
+            }
+            if (pendingResult != null) {
+                try { pendingResult.finish(); } catch (Exception ignored) {}
+            }
             return;
         }
 
-        // Run network query on background thread
         new Thread(() -> {
             try {
                 String targetUrl = "https://motodc-official.vercel.app/api/delivery-partner?action=active-deliveries&riderId="
@@ -64,6 +82,7 @@ public class OrderPollReceiver extends BroadcastReceiver {
                 URL url = new URL(targetUrl);
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                 conn.setRequestMethod("GET");
+                conn.setRequestProperty("User-Agent", "MotoDC-Partner-Android/1.0.27");
                 conn.setConnectTimeout(9000);
                 conn.setReadTimeout(9000);
 
@@ -111,8 +130,13 @@ public class OrderPollReceiver extends BroadcastReceiver {
             } catch (Exception e) {
                 Log.w(TAG, "Background poll warning: " + e.getMessage());
             } finally {
-                // Re-arm alarm so polling continues while app is closed
                 scheduleNextPoll(context);
+                if (wakeLock != null && wakeLock.isHeld()) {
+                    try { wakeLock.release(); } catch (Exception ignored) {}
+                }
+                if (pendingResult != null) {
+                    try { pendingResult.finish(); } catch (Exception ignored) {}
+                }
             }
         }).start();
     }
@@ -138,12 +162,8 @@ public class OrderPollReceiver extends BroadcastReceiver {
         String body = (customer != null && !customer.isEmpty() ? "Customer: " + customer + " • " : "")
                 + "Assigned to your route in " + city + ". Open app to start delivery.";
 
-        int smallIcon = context.getApplicationInfo().icon != 0
-                ? context.getApplicationInfo().icon
-                : android.R.drawable.ic_dialog_info;
-
         NotificationCompat.Builder builder = new NotificationCompat.Builder(context, CHANNEL_ID)
-                .setSmallIcon(smallIcon)
+                .setSmallIcon(R.drawable.ic_stat_motodc)
                 .setContentTitle(title)
                 .setContentText(body)
                 .setStyle(new NotificationCompat.BigTextStyle().bigText(body + "\nTotal active orders: " + totalCount))
@@ -151,9 +171,11 @@ public class OrderPollReceiver extends BroadcastReceiver {
                 .setCategory(NotificationCompat.CATEGORY_ALARM)
                 .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
                 .setAutoCancel(true)
+                .setDefaults(NotificationCompat.DEFAULT_ALL)
                 .setSound(soundUri)
                 .setVibrate(new long[]{0, 700, 200, 700, 200, 900})
-                .setContentIntent(pi);
+                .setContentIntent(pi)
+                .setFullScreenIntent(pi, true);
 
         nm.notify((int) (System.currentTimeMillis() % 100000), builder.build());
     }

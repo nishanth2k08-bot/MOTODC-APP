@@ -12,6 +12,7 @@ import android.media.AudioAttributes;
 import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.Build;
+import android.os.PowerManager;
 import android.util.Log;
 
 import androidx.core.app.NotificationCompat;
@@ -47,96 +48,110 @@ public class ShiftAlarmReceiver extends BroadcastReceiver {
         String action = intent != null ? intent.getAction() : "";
         if (action == null) return;
 
-        SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-        String riderId = prefs.getString("rider_id", "");
-        String username = prefs.getString("rider_username", "");
-        boolean isLoggedIn = (!riderId.isEmpty() || !username.isEmpty());
+        PowerManager pm = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
+        PowerManager.WakeLock wakeLock = pm != null
+                ? pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "MotoDC:ShiftAlarmWakeLock")
+                : null;
+        if (wakeLock != null) {
+            wakeLock.acquire(10000);
+        }
 
-        switch (action) {
-            case ACTION_MORNING_CHECKIN:
-                // 8:15 AM IST: Shift check-in opens
-                if (!isLoggedIn) {
-                    showShiftNotification(
-                            context,
-                            1001,
-                            "⏰ Karaikal Hub Check-In Open (8:15 AM)",
-                            "Morning attendance window is active (8:15 AM – 9:00 AM). Log in now to record on-time punctuality."
-                    );
-                }
-                // Reschedule for next day
-                scheduleAlarm(context, ACTION_MORNING_CHECKIN, 101, 8, 15);
-                break;
+        try {
+            SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+            String riderId = prefs.getString("rider_id", "");
+            String username = prefs.getString("rider_username", "");
+            boolean isLoggedIn = (!riderId.isEmpty() || !username.isEmpty());
 
-            case ACTION_MORNING_GRACE:
-                // 8:55 AM IST: 5 minutes before 9:00 AM grace cutoff
-                if (!isLoggedIn) {
-                    showShiftNotification(
-                            context,
-                            1002,
-                            "🚨 FINAL CALL: Grace Ends in 5 Mins (9:00 AM)!",
-                            "Check-in cutoff is 9:00 AM sharp! Log in immediately to avoid late strike & protect your ₹2,500 bonus."
-                    );
-                }
-                // Reschedule for next day
-                scheduleAlarm(context, ACTION_MORNING_GRACE, 102, 8, 55);
-                break;
+            switch (action) {
+                case ACTION_MORNING_CHECKIN:
+                    // 8:15 AM IST: Shift check-in opens
+                    if (!isLoggedIn) {
+                        showShiftNotification(
+                                context,
+                                1001,
+                                "⏰ Karaikal Hub Check-In Open (8:15 AM)",
+                                "Morning attendance window is active (8:15 AM – 9:00 AM). Log in now to record on-time punctuality."
+                        );
+                    }
+                    // Reschedule for next day
+                    scheduleAlarm(context, ACTION_MORNING_CHECKIN, 101, 8, 15);
+                    break;
 
-            case ACTION_AFTERNOON_CHECKIN:
-                // 1:15 PM (13:15) IST: Afternoon check-in opens
-                if (!isLoggedIn) {
-                    showShiftNotification(
-                            context,
-                            1003,
-                            "⏰ Afternoon Shift Check-In Open (1:15 PM)",
-                            "Afternoon attendance window is active (1:15 PM – 2:00 PM). Log in now at Karaikal Hub."
-                    );
-                }
-                scheduleAlarm(context, ACTION_AFTERNOON_CHECKIN, 103, 13, 15);
-                break;
+                case ACTION_MORNING_GRACE:
+                    // 8:55 AM IST: 5 minutes before 9:00 AM grace cutoff
+                    if (!isLoggedIn) {
+                        showShiftNotification(
+                                context,
+                                1002,
+                                "🚨 FINAL CALL: Grace Ends in 5 Mins (9:00 AM)!",
+                                "Check-in cutoff is 9:00 AM sharp! Log in immediately to avoid late strike & protect your ₹2,500 bonus."
+                        );
+                    }
+                    // Reschedule for next day
+                    scheduleAlarm(context, ACTION_MORNING_GRACE, 102, 8, 55);
+                    break;
 
-            case ACTION_AFTERNOON_GRACE:
-                // 1:55 PM (13:55) IST: 5 mins before 2:00 PM cutoff
-                if (!isLoggedIn) {
-                    showShiftNotification(
-                            context,
-                            1004,
-                            "🚨 FINAL CALL: Afternoon Grace Ends in 5 Mins (2:00 PM)!",
-                            "Afternoon check-in closes at 2:00 PM sharp. Log in now to avoid attendance strike."
-                    );
-                }
-                scheduleAlarm(context, ACTION_AFTERNOON_GRACE, 104, 13, 55);
-                break;
+                case ACTION_AFTERNOON_CHECKIN:
+                    // 1:15 PM (13:15) IST: Afternoon check-in opens
+                    if (!isLoggedIn) {
+                        showShiftNotification(
+                                context,
+                                1003,
+                                "⏰ Afternoon Shift Check-In Open (1:15 PM)",
+                                "Afternoon attendance window is active (1:15 PM – 2:00 PM). Log in now at Karaikal Hub."
+                        );
+                    }
+                    scheduleAlarm(context, ACTION_AFTERNOON_CHECKIN, 103, 13, 15);
+                    break;
 
-            case ACTION_SHIFT_AUTOLOGOFF:
-                // 8:30 PM (20:30) IST: Scheduled shift end & automatic signout
-                if (isLoggedIn) {
-                    final String activeRider = !riderId.isEmpty() ? riderId : username;
-                    // 1. Immediately log off in SharedPreferences
-                    prefs.edit()
-                            .remove("rider_id")
-                            .remove("rider_username")
-                            .remove("notified_order_ids")
-                            .putBoolean("auto_logged_off", true)
-                            .putLong("auto_logged_off_at", System.currentTimeMillis())
-                            .apply();
+                case ACTION_AFTERNOON_GRACE:
+                    // 1:55 PM (13:55) IST: 5 mins before 2:00 PM cutoff
+                    if (!isLoggedIn) {
+                        showShiftNotification(
+                                context,
+                                1004,
+                                "🚨 FINAL CALL: Afternoon Grace Ends in 5 Mins (2:00 PM)!",
+                                "Afternoon check-in closes at 2:00 PM sharp. Log in now to avoid attendance strike."
+                        );
+                    }
+                    scheduleAlarm(context, ACTION_AFTERNOON_GRACE, 104, 13, 55);
+                    break;
 
-                    // 2. Stop order polling alarm
-                    OrderPollReceiver.stopPolling(context);
+                case ACTION_SHIFT_AUTOLOGOFF:
+                    // 8:30 PM (20:30) IST: Scheduled shift end & automatic signout
+                    if (isLoggedIn) {
+                        final String activeRider = !riderId.isEmpty() ? riderId : username;
+                        // 1. Immediately log off in SharedPreferences
+                        prefs.edit()
+                                .remove("rider_id")
+                                .remove("rider_username")
+                                .remove("notified_order_ids")
+                                .putBoolean("auto_logged_off", true)
+                                .putLong("auto_logged_off_at", System.currentTimeMillis())
+                                .apply();
 
-                    // 3. Fire high-priority heads-up notification immediately
-                    showShiftNotification(
-                            context,
-                            1005,
-                            "🌙 Shift Concluded & Automated Signout (8:30 PM)",
-                            "Your scheduled shift has ended. You have been automatically signed off. Shift attendance recorded at Karaikal Hub."
-                    );
+                        // 2. Stop order polling alarm
+                        OrderPollReceiver.stopPolling(context);
 
-                    // 4. Notify backend server asynchronously
-                    notifyServerLogout(activeRider);
-                }
-                // Reschedule for next day
-                scheduleAlarm(context, ACTION_SHIFT_AUTOLOGOFF, 105, 20, 30);
-                break;
+                        // 3. Fire high-priority heads-up notification immediately
+                        showShiftNotification(
+                                context,
+                                1005,
+                                "🌙 Shift Concluded & Automated Signout (8:30 PM)",
+                                "Your scheduled shift has ended. You have been automatically signed off. Shift attendance recorded at Karaikal Hub."
+                        );
+
+                        // 4. Notify backend server asynchronously
+                        notifyServerLogout(activeRider);
+                    }
+                    // Reschedule for next day
+                    scheduleAlarm(context, ACTION_SHIFT_AUTOLOGOFF, 105, 20, 30);
+                    break;
+            }
+        } finally {
+            if (wakeLock != null && wakeLock.isHeld()) {
+                try { wakeLock.release(); } catch (Exception ignored) {}
+            }
         }
     }
 
@@ -184,9 +199,7 @@ public class ShiftAlarmReceiver extends BroadcastReceiver {
 
         Uri soundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
 
-        int smallIcon = context.getApplicationInfo().icon != 0
-                ? context.getApplicationInfo().icon
-                : android.R.drawable.ic_dialog_info;
+        int smallIcon = R.drawable.ic_stat_motodc;
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(context, CHANNEL_ID)
                 .setSmallIcon(smallIcon)

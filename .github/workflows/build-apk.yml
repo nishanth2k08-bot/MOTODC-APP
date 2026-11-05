@@ -82,10 +82,10 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/heads/main')
         with:
-          tag_name: v1.0.26
-          name: "MotoDC Android APKs (Partner & Hub v1.0.26)"
+          tag_name: v1.0.27
+          name: "MotoDC Android APKs (Partner & Hub v1.0.27)"
           body: |
-            ## 🚀 MotoDC Android Apps (Partner & Hub v1.0.26)
+            ## 🚀 MotoDC Android Apps (Partner & Hub v1.0.27)
             
             Download and install native Android APKs on any Android device:
             * **MotoDC-Partner.apk**: Dedicated app for delivery riders & couriers with native Android AlarmManager background poller (receives urgent order assignment notifications even when closed or cleared from recent tasks), live GPS route heartbeat, runsheet checklist, and doorstep handover verification.

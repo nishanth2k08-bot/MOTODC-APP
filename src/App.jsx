@@ -154,6 +154,20 @@ export default function App() {
           if (currentOrderIds.length > 0) {
             const count = currentOrderIds.length;
             const previewList = currentOrderIds.slice(0, 2).map((x) => '#' + x).join(', ') + (count > 2 ? '...' : '');
+
+            // Native Android OS heads-up alert banner with sound & vibration
+            try {
+              if (MotoDCBridge && typeof MotoDCBridge.triggerOrderNotification === 'function') {
+                const firstStop = data.stops[0];
+                MotoDCBridge.triggerOrderNotification({
+                  orderId: currentOrderIds[0] || 'ASSIGNED',
+                  customer: firstStop?.customer?.name || '',
+                  city: firstStop?.shipping?.city || 'Karaikal',
+                  count: count,
+                }).catch(() => {});
+              }
+            } catch (_) {}
+
             sendLocalNotification({
               id: Math.floor(2000 + Math.random() * 7000),
               title: `📦 ${count} Package${count > 1 ? 's' : ''} Assigned!`,
@@ -185,6 +199,22 @@ export default function App() {
         if (genuinelyNewIds.length > 0) {
           const count = genuinelyNewIds.length;
           const previewList = genuinelyNewIds.slice(0, 2).map((x) => '#' + x).join(', ') + (count > 2 ? '...' : '');
+
+          // Native Android OS heads-up alert banner with sound & vibration
+          try {
+            if (MotoDCBridge && typeof MotoDCBridge.triggerOrderNotification === 'function') {
+              const matchingStop = data.stops.find((s) =>
+                genuinelyNewIds.includes(String(s.orderId || s.id || '').replace(/^#/, '').trim())
+              );
+              MotoDCBridge.triggerOrderNotification({
+                orderId: genuinelyNewIds[0] || 'ASSIGNED',
+                customer: matchingStop?.customer?.name || '',
+                city: matchingStop?.shipping?.city || 'Karaikal',
+                count: count,
+              }).catch(() => {});
+            }
+          } catch (_) {}
+
           sendLocalNotification({
             id: Math.floor(2000 + Math.random() * 7000),
             title: `📦 ${count} New Package${count > 1 ? 's' : ''} Assigned!`,

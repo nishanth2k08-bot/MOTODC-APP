@@ -44,6 +44,19 @@ public class MotoDCBridgePlugin extends Plugin {
     }
 
     @PluginMethod
+    public void triggerOrderNotification(PluginCall call) {
+        String orderId = call.getString("orderId", "");
+        String customer = call.getString("customer", "");
+        String city = call.getString("city", "Karaikal");
+        int count = call.getInt("count", 1);
+        Context ctx = getContext();
+        if (ctx != null) {
+            OrderPollReceiver.showNotification(ctx, orderId, customer, city, count);
+        }
+        call.resolve();
+    }
+
+    @PluginMethod
     public void checkAutoLogoff(PluginCall call) {
         Context ctx = getContext();
         JSObject ret = new JSObject();
