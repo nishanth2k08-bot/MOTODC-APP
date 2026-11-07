@@ -165,11 +165,11 @@ export const scheduleNativeShiftAlarms = async () => {
           allowWhileIdle: true,
           isExactNotification: true,
         },
-        // 3. 8:55 AM - 5 Mins Before Grace Timing Ends (CRITICAL FINAL WARNING - Daily)
+        // 3. 8:55 AM - 5 Mins Before Shift Start (Daily)
         {
           id: 9914,
-          title: '🚨 FINAL CALL: Grace Timing Ends in 5 Mins (9:00 AM)!',
-          body: 'Check-in closes at 9:00 AM sharp! Log in immediately to avoid late strike & protect your ₹2,500 bonus.',
+          title: '🚨 Morning Shift Starts in 5 Mins (9:00 AM)!',
+          body: 'Check-in is active! Log in at Karaikal Hub to begin your morning deliveries.',
           channelId: 'motodc_shift_alerts',
           schedule: {
             on: { hour: 8, minute: 55 },
@@ -195,11 +195,11 @@ export const scheduleNativeShiftAlarms = async () => {
           allowWhileIdle: true,
           isExactNotification: true,
         },
-        // 5. 1:55 PM (13:55) - 5 Mins Before Afternoon Grace Cutoff (Daily)
+        // 5. 1:55 PM (13:55) - 5 Mins Before Afternoon Shift Start (Daily)
         {
           id: 9913,
-          title: '🚨 FINAL CALL: Afternoon Grace Ends in 5 Mins (2:00 PM)!',
-          body: 'Afternoon check-in closes at 2:00 PM sharp. Log in now to avoid attendance strike.',
+          title: '🚨 Afternoon Shift Starts in 5 Mins (2:00 PM)!',
+          body: 'Afternoon check-in is active. Log in at Karaikal Hub to begin afternoon deliveries.',
           channelId: 'motodc_shift_alerts',
           schedule: {
             on: { hour: 13, minute: 55 },
@@ -319,14 +319,14 @@ export const checkAndNotifyLoginTime = (isLoggedIn) => {
     // 8:55 AM (535m): 5 Mins Before Grace Cutoff (CRITICAL FINAL WARNING)
     // 9:00 AM (540m): Cutoff Closes
 
-    // 1. 5-Minute Warning Before Grace Timing Ends (8:55 AM - 9:00 AM)
+    // 1. 5-Minute Warning Before Shift Starts (8:55 AM - 9:00 AM)
     if (minutes >= 535 && minutes < 540) {
       const key = `motodc_notified_grace5_${today}`;
       if (!localStorage.getItem(key)) {
         sendLocalNotification({
           id: 9904,
-          title: '🚨 FINAL CALL: Grace Timing Ends in 5 Mins (9:00 AM)!',
-          body: 'Check-in closes at 9:00 AM sharp! Log in immediately to avoid late strike & protect your ₹2,500 monthly bonus.',
+          title: '🚨 Morning Shift Starts in 5 Mins (9:00 AM)!',
+          body: 'Check-in is active! Log in at Karaikal Hub to begin your morning deliveries.',
           channelId: 'motodc_shift_alerts',
         });
         localStorage.setItem(key, '1');
@@ -334,14 +334,14 @@ export const checkAndNotifyLoginTime = (isLoggedIn) => {
       return;
     }
 
-    // 2. 15-Minute Warning Before Grace Timing Ends (8:45 AM - 8:54 AM)
+    // 2. 15-Minute Warning Before Shift Starts (8:45 AM - 8:54 AM)
     if (minutes >= 525 && minutes < 535) {
       const key = `motodc_notified_grace15_${today}`;
       if (!localStorage.getItem(key)) {
         sendLocalNotification({
           id: 9901,
-          title: '⚠️ Shift Check-In Grace Window Closing!',
-          body: '15 minutes left before check-in cutoff at 9:00 AM. Log in now to protect your ₹2,500 monthly bonus.',
+          title: '⚠️ Shift Check-In Active',
+          body: '15 minutes left before 9:00 AM. Log in now at Karaikal Hub to begin deliveries.',
           channelId: 'motodc_shift_alerts',
         });
         localStorage.setItem(key, '1');
@@ -356,7 +356,7 @@ export const checkAndNotifyLoginTime = (isLoggedIn) => {
         sendLocalNotification({
           id: 9902,
           title: '⏰ Karaikal Hub Check-In is Open!',
-          body: 'Check-in window is active (8:15 AM – 9:00 AM). Log in now to record on-time attendance.',
+          body: 'Check-in window is active (8:15 AM – 9:00 AM). Log in now to begin your deliveries.',
           channelId: 'motodc_shift_alerts',
         });
         localStorage.setItem(key, '1');
@@ -364,14 +364,14 @@ export const checkAndNotifyLoginTime = (isLoggedIn) => {
       return;
     }
 
-    // 4. 1:55 PM - 2:00 PM: 5 Mins Before Afternoon Grace Cutoff
+    // 4. 1:55 PM - 2:00 PM: 5 Mins Before Afternoon Shift
     if (minutes >= 835 && minutes < 840) {
       const key = `motodc_notified_afternoon5_${today}`;
       if (!localStorage.getItem(key)) {
         sendLocalNotification({
           id: 9905,
-          title: '🚨 FINAL CALL: Afternoon Grace Ends in 5 Mins (2:00 PM)!',
-          body: 'Afternoon check-in closes at 2:00 PM sharp. Log in now to avoid attendance strike.',
+          title: '🚨 Afternoon Shift Starts in 5 Mins (2:00 PM)!',
+          body: 'Afternoon check-in is active. Log in at Karaikal Hub to begin afternoon deliveries.',
           channelId: 'motodc_shift_alerts',
         });
         localStorage.setItem(key, '1');

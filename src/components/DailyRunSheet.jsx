@@ -400,11 +400,25 @@ export default function DailyRunSheet({
 
   // 1-Tap Google Maps Turn-by-Turn Navigation (Optimized for Two-Wheelers / Delivery Bikes)
   const handleOpenGoogleMaps = (shipping) => {
-    const addressParts = [shipping?.address, shipping?.city, shipping?.state, shipping?.pincode]
-      .filter(Boolean)
-      .join(', ');
-    const destination = encodeURIComponent(addressParts || 'Karaikal, Puducherry');
-    const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${destination}&travelmode=two-wheeler`;
+    let mapsUrl;
+    if (shipping?.lat && shipping?.lng && !isNaN(Number(shipping.lat)) && !isNaN(Number(shipping.lng))) {
+      // 100% Accurate doorstep GPS coordinate destination
+      mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${shipping.lat},${shipping.lng}&travelmode=two-wheeler`;
+    } else {
+      // High-precision address fallback with explicit Karaikal district qualification
+      const cleanAddress = (shipping?.address || '').trim();
+      const cleanCity = (shipping?.city || '').trim();
+      const cleanPincode = (shipping?.pincode || '').trim();
+      const addressParts = [cleanAddress, cleanCity];
+      if (!/karaikal/i.test(cleanAddress) && !/karaikal/i.test(cleanCity)) {
+        addressParts.push('Karaikal');
+      }
+      addressParts.push('Puducherry');
+      if (cleanPincode) addressParts.push(cleanPincode);
+      addressParts.push('India');
+      const destination = encodeURIComponent(addressParts.filter(Boolean).join(', ') || 'Karaikal, Puducherry');
+      mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${destination}&travelmode=two-wheeler`;
+    }
 
     // Native anchor trigger ensures reliable intent dispatch to the Google Maps Android app
     const a = document.createElement('a');

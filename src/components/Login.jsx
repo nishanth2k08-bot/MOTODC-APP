@@ -8,22 +8,12 @@ export default function Login({ onLogin, onEnterChangePassword, theme, onToggleT
   const [pin, setPin] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Late Check-in Penalty Modal State
-  const [lateBlockData, setLateBlockData] = useState(null);
-  const [showLateModal, setShowLateModal] = useState(false);
-
   // Forgot Password / OTP Flow State: 'login' | 'request_reset' | 'verify_otp'
   const [mode, setMode] = useState('login');
   const [resetUsername, setResetUsername] = useState('');
   const [maskedPhone, setMaskedPhone] = useState('');
   const [otpInput, setOtpInput] = useState('');
   const [resetLoading, setResetLoading] = useState(false);
-
-  // Emergency 1-Time Pass Request States
-  const [requestSent, setRequestSent] = useState(false);
-  const [requestLoading, setRequestLoading] = useState(false);
-  const [requestStatus, setRequestStatus] = useState('');
-  const [checkingStatus, setCheckingStatus] = useState(false);
 
   // Check-In Window Live HUD Status
   const getLoginTimeStatus = () => {
@@ -35,22 +25,22 @@ export default function Login({ onLogin, onEnterChangePassword, theme, onToggleT
 
       // Morning Window: 8:15 AM (495m) to 9:00 AM (540m)
       if (minutes >= 495 && minutes < 540) {
-        const isCritical = minutes >= 535; // 8:55 AM - 9:00 AM (5 mins before grace timing ends)
+        const isCritical = minutes >= 535; // 8:55 AM - 9:00 AM (5 mins before shift start)
         const isUrgent = minutes >= 525 && !isCritical; // 8:45 AM - 8:54 AM
         return {
           isOpen: true,
           isUrgent: isUrgent || isCritical,
           isCritical,
           label: isCritical
-            ? `🚨 FINAL CALL: Grace Ends in ${540 - minutes} Mins (9:00 AM Sharp)!`
+            ? `🚨 FINAL CALL: Shift Starts in ${540 - minutes} Mins (9:00 AM Sharp)!`
             : isUrgent
-            ? `⚠️ URGENT: Check-in closes at 9:00 AM (${540 - minutes}m left)`
-            : '🟢 Karaikal Hub Check-In Active (Closes at 9:00 AM)',
+            ? `⚠️ Check-in closing soon: 9:00 AM (${540 - minutes}m left)`
+            : '🟢 Karaikal Hub Check-In Active (Morning Shift)',
           sub: isCritical
-            ? 'Grace timing is expiring! Log in immediately to avoid unpunctuality strike.'
+            ? 'Shift check-in is active! Log in immediately to begin your morning deliveries.'
             : isUrgent
-            ? 'Log in now to avoid an unpunctuality strike and bonus deduction!'
-            : 'Log in now to secure your ₹2,500 monthly punctuality bonus.',
+            ? 'Morning check-in is closing soon. Log in now to begin your deliveries.'
+            : 'Log in at Karaikal Hub to begin your shift.',
         };
       }
       // Afternoon Window: 1:15 PM (795m) to 2:00 PM (840m)
@@ -69,79 +59,6 @@ export default function Login({ onLogin, onEnterChangePassword, theme, onToggleT
   };
 
   const loginTimeStatus = getLoginTimeStatus();
-
-  // 0. Raise Emergency 1-Time Login Request to Hub Manager
-  const handleRaiseEmergencyRequest = async () => {
-    const cleanUser = username.trim().toUpperCase();
-    if (!cleanUser) return;
-    setRequestLoading(true);
-    try {
-      const res = await fetch('https://motodc-official.vercel.app/api/delivery-auth?action=request-emergency-login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          username: cleanUser,
-          reason: `Late check-in attempt at ${lateBlockData?.istTimeString || 'past cutoff'}`,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to submit request');
-      toast.success('Emergency login request sent to Hub Manager!');
-      setRequestSent(true);
-      setRequestStatus('pending');
-
-      // Auto-poll approval status every 4s
-      const pollTimer = setInterval(async () => {
-        try {
-          const checkRes = await fetch(`https://motodc-official.vercel.app/api/delivery-auth?action=check-emergency-login-status&username=${cleanUser}`);
-          const checkData = await checkRes.json();
-          if (checkRes.ok && checkData.oneTimePassGranted) {
-            clearInterval(pollTimer);
-            toast.success('🎉 Hub Manager Approved 1-Time Pass! Logging in...', { icon: '🔑', duration: 4000 });
-            setShowLateModal(false);
-            const formMock = { preventDefault: () => {} };
-            handleLoginSubmit(formMock);
-          } else if (checkData.status === 'rejected') {
-            clearInterval(pollTimer);
-            toast.error('Emergency request was rejected by Admin.');
-            setRequestSent(false);
-            setRequestStatus('rejected');
-          }
-        } catch (_) {}
-      }, 4000);
-    } catch (err) {
-      toast.error(err.message || 'Error submitting request');
-    } finally {
-      setRequestLoading(false);
-    }
-  };
-
-  // Check Approval Status manually
-  const handleCheckApprovalStatus = async () => {
-    const cleanUser = username.trim().toUpperCase();
-    if (!cleanUser) return;
-    setCheckingStatus(true);
-    try {
-      const res = await fetch(`https://motodc-official.vercel.app/api/delivery-auth?action=check-emergency-login-status&username=${cleanUser}`);
-      const data = await res.json();
-      if (res.ok && data.oneTimePassGranted) {
-        toast.success('🎉 Hub Manager Approved 1-Time Pass! Logging in...', { icon: '🔑', duration: 4000 });
-        setShowLateModal(false);
-        const formMock = { preventDefault: () => {} };
-        handleLoginSubmit(formMock);
-      } else if (data.status === 'rejected') {
-        toast.error('Hub Manager rejected the emergency login request.');
-        setRequestSent(false);
-        setRequestStatus('rejected');
-      } else {
-        toast('Approval is still pending with Hub Manager.', { icon: '⏳' });
-      }
-    } catch (err) {
-      toast.error('Failed to check approval status');
-    } finally {
-      setCheckingStatus(false);
-    }
-  };
 
   // 1. Submit Normal Login
   const handleLoginSubmit = async (e) => {
@@ -172,11 +89,6 @@ export default function Login({ onLogin, onEnterChangePassword, theme, onToggleT
 
       const data = await res.json();
       if (!res.ok) {
-        if (data.code === 'LATE_CHECKIN_BLOCKED') {
-          setLateBlockData(data);
-          setShowLateModal(true);
-          return;
-        }
         throw new Error(data.error || 'Login failed');
       }
 
@@ -476,154 +388,6 @@ export default function Login({ onLogin, onEnterChangePassword, theme, onToggleT
               </button>
             </div>
           </form>
-        </div>
-      )}
-
-      {/* LATE CHECK-IN BLOCKED POPUP MODAL */}
-      {showLateModal && lateBlockData && (
-        <div className="lateModalOverlay" onClick={() => setShowLateModal(false)}>
-          <div className="lateModalCard" onClick={(e) => e.stopPropagation()}>
-            <div className="lateModalHeader">
-              <div className="lateModalIconWrap">
-                <AlertTriangle size={30} color="#ef4444" />
-              </div>
-              <button
-                type="button"
-                className="lateModalCloseBtn"
-                onClick={() => setShowLateModal(false)}
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            <h3 className="lateModalTitle">Late Check-In Blocked</h3>
-            <p className="lateModalSub">
-              On-time check-in is mandatory for Karaikal fleet corridor dispatch.
-            </p>
-
-            <div className="lateModalDetailsBox">
-              <div className="lateDetailRow">
-                <span>Shift Start Time:</span>
-                <strong>{lateBlockData.shiftStartTime || '08:30 AM'}</strong>
-              </div>
-              <div className="lateDetailRow">
-                <span>Check-In Cutoff:</span>
-                <strong style={{ color: '#f59e0b' }}>{lateBlockData.cutoffTime || '09:00 AM'}</strong>
-              </div>
-              <div className="lateDetailRow">
-                <span>Your Attempt Time:</span>
-                <strong style={{ color: '#ef4444' }}>{lateBlockData.istTimeString || 'Late'}</strong>
-              </div>
-            </div>
-
-            {/* Attendance Strike Indicator */}
-            <div className="lateStrikeCard">
-              <div className="strikeHeader">
-                <span>ATTENDANCE STRIKES:</span>
-                <strong className={lateBlockData.bonusCutoff ? 'strikeCritical' : 'strikeWarning'}>
-                  {lateBlockData.lateStrikes || 1} / 3 Strikes
-                </strong>
-              </div>
-              <div className="strikeProgressBar">
-                <div
-                  className="strikeProgressFill"
-                  style={{
-                    width: `${Math.min(100, ((lateBlockData.lateStrikes || 1) / 3) * 100)}%`,
-                    background: lateBlockData.bonusCutoff ? '#ef4444' : '#f59e0b',
-                  }}
-                />
-              </div>
-              <p className="strikePenaltyText">
-                {lateBlockData.bonusCutoff ? (
-                  <span style={{ color: '#ef4444', fontWeight: 800 }}>
-                    ⚠️ 3 Strikes Exceeded: Your monthly punctuality bonus (₹2,500) has been forfeited.
-                  </span>
-                ) : (
-                  <span>
-                    Accumulating 3 late strikes in a month will permanently forfeit your <strong>₹2,500 punctuality bonus</strong>.
-                  </span>
-                )}
-              </p>
-            </div>
-
-            <div className="lateModalActions">
-              {requestSent ? (
-                <div style={{
-                  background: 'rgba(30, 41, 59, 0.8)',
-                  border: '1px solid rgba(56, 189, 248, 0.3)',
-                  borderRadius: '10px',
-                  padding: '12px',
-                  textAlign: 'center',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '8px'
-                }}>
-                  <span style={{ fontSize: '12px', color: '#38bdf8', fontWeight: 700 }}>
-                    ⏳ Emergency Request Sent to Hub Manager!
-                  </span>
-                  <small style={{ fontSize: '11px', color: '#94a3b8' }}>
-                    Admin will review and approve 1-Time Pass in the dispatch portal.
-                  </small>
-                  <button
-                    type="button"
-                    style={{
-                      background: '#0284c7',
-                      color: '#fff',
-                      border: 'none',
-                      borderRadius: '8px',
-                      padding: '8px 12px',
-                      fontSize: '12px',
-                      fontWeight: 700,
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '6px'
-                    }}
-                    onClick={handleCheckApprovalStatus}
-                    disabled={checkingStatus}
-                  >
-                    {checkingStatus ? 'Checking...' : '🔄 Check Approval Status'}
-                  </button>
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  style={{
-                    background: 'linear-gradient(135deg, #7c3aed, #6d28d9)',
-                    color: '#fff',
-                    border: 'none',
-                    borderRadius: '10px',
-                    padding: '12px 14px',
-                    fontSize: '13px',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '8px',
-                    boxShadow: '0 4px 14px rgba(124, 58, 237, 0.35)'
-                  }}
-                  onClick={handleRaiseEmergencyRequest}
-                  disabled={requestLoading}
-                >
-                  <KeyRound size={16} />
-                  {requestLoading ? 'Submitting Request...' : 'Raise Emergency 1-Time Login Request'}
-                </button>
-              )}
-
-              <a href="tel:+919842104829" className="hubManagerCallBtn">
-                <Phone size={15} /> Call Hub Manager for Clearance
-              </a>
-              <button
-                type="button"
-                className="dismissLateModalBtn"
-                onClick={() => setShowLateModal(false)}
-              >
-                Understood & Dismiss
-              </button>
-            </div>
-          </div>
         </div>
       )}
     </div>

@@ -78,13 +78,13 @@ public class ShiftAlarmReceiver extends BroadcastReceiver {
                     break;
 
                 case ACTION_MORNING_GRACE:
-                    // 8:55 AM IST: 5 minutes before 9:00 AM grace cutoff
+                    // 8:55 AM IST: 5 minutes before 9:00 AM shift start
                     if (!isLoggedIn) {
                         showShiftNotification(
                                 context,
                                 1002,
-                                "🚨 FINAL CALL: Grace Ends in 5 Mins (9:00 AM)!",
-                                "Check-in cutoff is 9:00 AM sharp! Log in immediately to avoid late strike & protect your ₹2,500 bonus."
+                                "🚨 Morning Shift Starts in 5 Mins (9:00 AM)!",
+                                "Check-in is active! Log in at Karaikal Hub to begin your morning deliveries."
                         );
                     }
                     // Reschedule for next day
@@ -105,13 +105,13 @@ public class ShiftAlarmReceiver extends BroadcastReceiver {
                     break;
 
                 case ACTION_AFTERNOON_GRACE:
-                    // 1:55 PM (13:55) IST: 5 mins before 2:00 PM cutoff
+                    // 1:55 PM (13:55) IST: 5 mins before 2:00 PM
                     if (!isLoggedIn) {
                         showShiftNotification(
                                 context,
                                 1004,
-                                "🚨 FINAL CALL: Afternoon Grace Ends in 5 Mins (2:00 PM)!",
-                                "Afternoon check-in closes at 2:00 PM sharp. Log in now to avoid attendance strike."
+                                "🚨 Afternoon Shift Starts in 5 Mins (2:00 PM)!",
+                                "Afternoon check-in is active. Log in at Karaikal Hub to begin afternoon deliveries."
                         );
                     }
                     scheduleAlarm(context, ACTION_AFTERNOON_GRACE, 104, 13, 55);
