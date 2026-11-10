@@ -82,14 +82,14 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/heads/main')
         with:
-          tag_name: v1.0.32
-          name: "MotoDC Android APKs (Partner & Hub v1.0.32)"
+          tag_name: v1.0.33
+          name: "MotoDC Android APKs (Partner & Hub v1.0.33)"
           body: |
-            ## 🚀 MotoDC Android Apps (Partner & Hub v1.0.32)
+            ## 🚀 MotoDC Android Apps (Partner & Hub v1.0.33)
             
             Download and install native Android APKs on any Android device:
-            * **MotoDC-Hub.apk (v1.0.32)**: Dedicated warehouse fulfillment app for Karaikal Hub floor staff. Camera barcode scanner triggers when an unverified order in Awaiting Packing is selected; packing checklist & verification locked until parcel barcode scan.
-            * **MotoDC-Partner.apk (v1.0.32)**: Dedicated app for delivery riders & couriers with high-precision Google Maps navigation (doorstep GPS coordinates + Karaikal district qualifier) and complete penalty/strikes friction removed.
+            * **MotoDC-Hub.apk (v1.0.33)**: Dedicated warehouse fulfillment app for Karaikal Hub floor staff. Camera barcode scanner triggers when an unverified order in Awaiting Packing is selected; packing checklist & verification locked until parcel barcode scan.
+            * **MotoDC-Partner.apk (v1.0.33)**: Dedicated app for delivery riders & couriers with high-precision Google Maps navigation (doorstep GPS coordinates + Karaikal district qualifier) and complete penalty/strikes friction removed.
           files: |
             release-output/MotoDC-Partner.apk
             release-output/MotoDC-Hub.apk
