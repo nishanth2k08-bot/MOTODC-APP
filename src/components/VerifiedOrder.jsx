@@ -16,6 +16,7 @@ import {
   WifiOff
 } from 'lucide-react';
 import { verifyDeliveryPin } from '../deliveryPinUtil';
+import { buildGoogleMapsUrl } from '../mapsUtil';
 
 const money = (n) => '₹' + Number(n || 0).toLocaleString('en-IN');
 
@@ -286,25 +287,8 @@ export default function VerifiedOrder({ order, onCancel, onConfirmDelivery, subm
             </a>
           )}
           <a
-            href={(() => {
-              const shipping = order.shipping;
-              if (shipping?.lat && shipping?.lng && !isNaN(Number(shipping.lat)) && !isNaN(Number(shipping.lng))) {
-                return `https://www.google.com/maps/dir/?api=1&destination=${shipping.lat},${shipping.lng}&travelmode=two-wheeler`;
-              }
-              const cleanAddress = (shipping?.address || '').trim();
-              const cleanCity = (shipping?.city || '').trim();
-              const cleanPincode = (shipping?.pincode || '').trim();
-              const addressParts = [cleanAddress, cleanCity];
-              if (!/karaikal/i.test(cleanAddress) && !/karaikal/i.test(cleanCity)) {
-                addressParts.push('Karaikal');
-              }
-              addressParts.push('Puducherry');
-              if (cleanPincode) addressParts.push(cleanPincode);
-              addressParts.push('India');
-              const destination = encodeURIComponent(addressParts.filter(Boolean).join(', ') || 'Karaikal, Puducherry');
-              return `https://www.google.com/maps/dir/?api=1&destination=${destination}&travelmode=two-wheeler`;
-            })()}
-            target="_system"
+            href={buildGoogleMapsUrl(order.shipping)}
+            target="_blank"
             rel="noopener noreferrer"
             className="actionBtn"
           >
@@ -324,6 +308,10 @@ export default function VerifiedOrder({ order, onCancel, onConfirmDelivery, subm
                   src={it.image}
                   alt=""
                   className="itemThumbnail"
+                  onError={(e) => {
+                    e.currentTarget.onerror = null;
+                    e.currentTarget.style.display = 'none';
+                  }}
                 />
               )}
               <span className="itemName">{it.name || 'Automotive Part'}</span>
