@@ -110,6 +110,20 @@
   white-space: nowrap;
 }
 
+.shippingStatusBadge.awaiting {
+  background: rgba(245, 158, 11, 0.12);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
 .shippingCloseBtn {
   background: #202735;
   color: #94a3b8;
